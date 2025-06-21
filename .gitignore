@@ -1,0 +1,3 @@
+# Archivos de variables de entorno.
+# Contienen secretos y configuraciones locales, nunca deben ser subidos al repositorio.
+.env 
