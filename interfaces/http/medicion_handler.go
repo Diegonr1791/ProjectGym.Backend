@@ -24,6 +24,16 @@ func NewMedicionHandler(r *gin.Engine, uc *usecase.MedicionUsecase) {
 	r.GET("/medicion/usuario/:usuario_id", h.ObtenerPorUsuarioID)
 }
 
+// @Summary Crear nueva medición
+// @Description Crea una nueva medición en el sistema
+// @Tags mediciones
+// @Accept json
+// @Produce json
+// @Param medicion body model.Medicion true "Datos de la medición"
+// @Success 201 {object} model.Medicion
+// @Failure 400 {object} map[string]interface{} "Datos inválidos"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /medicion [post]
 func (h *MedicionHandler) Crear(c *gin.Context) {
 	var medicion model.Medicion
 	if err := c.ShouldBindJSON(&medicion); err != nil {
@@ -37,6 +47,14 @@ func (h *MedicionHandler) Crear(c *gin.Context) {
 	c.JSON(http.StatusCreated, medicion)
 }
 
+// @Summary Obtener todas las mediciones
+// @Description Obtiene la lista completa de mediciones
+// @Tags mediciones
+// @Accept json
+// @Produce json
+// @Success 200 {array} model.Medicion
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /medicion [get]
 func (h *MedicionHandler) ObtenerTodos(c *gin.Context) {
 	mediciones, err := h.uc.GetAll()
 	if err != nil {
@@ -46,6 +64,15 @@ func (h *MedicionHandler) ObtenerTodos(c *gin.Context) {
 	c.JSON(http.StatusOK, mediciones)
 }
 
+// @Summary Obtener medición por ID
+// @Description Obtiene una medición específica por su ID
+// @Tags mediciones
+// @Accept json
+// @Produce json
+// @Param id path int true "ID de la medición"
+// @Success 200 {object} model.Medicion
+// @Failure 404 {object} map[string]interface{} "Medición no encontrada"
+// @Router /medicion/{id} [get]
 func (h *MedicionHandler) ObtenerPorID(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	medicion, err := h.uc.GetByID(uint(id))
@@ -56,6 +83,17 @@ func (h *MedicionHandler) ObtenerPorID(c *gin.Context) {
 	c.JSON(http.StatusOK, medicion)
 }
 
+// @Summary Actualizar medición
+// @Description Actualiza una medición existente
+// @Tags mediciones
+// @Accept json
+// @Produce json
+// @Param id path int true "ID de la medición"
+// @Param medicion body model.Medicion true "Datos actualizados de la medición"
+// @Success 200 {object} model.Medicion
+// @Failure 400 {object} map[string]interface{} "Datos inválidos"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /medicion/{id} [put]
 func (h *MedicionHandler) Actualizar(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var medicion model.Medicion
@@ -71,6 +109,15 @@ func (h *MedicionHandler) Actualizar(c *gin.Context) {
 	c.JSON(http.StatusOK, medicion)
 }
 
+// @Summary Eliminar medición
+// @Description Elimina una medición del sistema
+// @Tags mediciones
+// @Accept json
+// @Produce json
+// @Param id path int true "ID de la medición"
+// @Success 204 "Medición eliminada"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /medicion/{id} [delete]
 func (h *MedicionHandler) Eliminar(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	if err := h.uc.Delete(uint(id)); err != nil {
@@ -80,6 +127,15 @@ func (h *MedicionHandler) Eliminar(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// @Summary Obtener mediciones por usuario
+// @Description Obtiene todas las mediciones de un usuario específico
+// @Tags mediciones
+// @Accept json
+// @Produce json
+// @Param usuario_id path int true "ID del usuario"
+// @Success 200 {array} model.Medicion
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /medicion/usuario/{usuario_id} [get]
 func (h *MedicionHandler) ObtenerPorUsuarioID(c *gin.Context) {
 	usuarioID, _ := strconv.Atoi(c.Param("usuario_id"))
 	mediciones, err := h.uc.GetMesurementsByUserID(uint(usuarioID))

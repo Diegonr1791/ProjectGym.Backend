@@ -24,6 +24,14 @@ func NewExerciseHandler(r *gin.Engine, uc *usecase.ExerciseUsecase) {
 	r.GET("/ejercicio/grupo-muscular/:id", h.GetByMuscleGroup)
 }
 
+// @Summary Obtener todos los ejercicios
+// @Description Obtiene la lista completa de ejercicios
+// @Tags ejercicios
+// @Accept json
+// @Produce json
+// @Success 200 {array} model.Ejercicio
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /ejercicio [get]
 func (h *ExerciseHandler) GetAll(c *gin.Context) {
 	ejercicios, err := h.uc.GetAll()
 	if err != nil {
@@ -33,6 +41,16 @@ func (h *ExerciseHandler) GetAll(c *gin.Context) {
 	c.JSON(http.StatusOK, ejercicios)
 }
 
+// @Summary Obtener ejercicio por ID
+// @Description Obtiene un ejercicio específico por su ID
+// @Tags ejercicios
+// @Accept json
+// @Produce json
+// @Param id path int true "ID del ejercicio"
+// @Success 200 {object} model.Ejercicio
+// @Failure 400 {object} map[string]interface{} "ID inválido"
+// @Failure 404 {object} map[string]interface{} "Ejercicio no encontrado"
+// @Router /ejercicio/{id} [get]
 func (h *ExerciseHandler) GetById(c *gin.Context) {
 	id := c.Param("id")
 	idUint, err := strconv.ParseUint(id, 10, 64)
@@ -49,6 +67,16 @@ func (h *ExerciseHandler) GetById(c *gin.Context) {
 	c.JSON(http.StatusOK, ejercicio)
 }
 
+// @Summary Crear nuevo ejercicio
+// @Description Crea un nuevo ejercicio en el sistema
+// @Tags ejercicios
+// @Accept json
+// @Produce json
+// @Param ejercicio body model.Ejercicio true "Datos del ejercicio"
+// @Success 201 {object} model.Ejercicio
+// @Failure 400 {object} map[string]interface{} "Datos inválidos"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /ejercicio [post]
 func (h *ExerciseHandler) Create(c *gin.Context) {
 	var ejercicio model.Ejercicio
 	if err := c.ShouldBindJSON(&ejercicio); err != nil {
@@ -62,6 +90,17 @@ func (h *ExerciseHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, ejercicio)
 }
 
+// @Summary Actualizar ejercicio
+// @Description Actualiza un ejercicio existente
+// @Tags ejercicios
+// @Accept json
+// @Produce json
+// @Param id path int true "ID del ejercicio"
+// @Param ejercicio body model.Ejercicio true "Datos actualizados del ejercicio"
+// @Success 200 {object} model.Ejercicio
+// @Failure 400 {object} map[string]interface{} "Datos inválidos"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /ejercicio/{id} [put]
 func (h *ExerciseHandler) Update(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var ejercicioUpdate model.Ejercicio
@@ -79,6 +118,16 @@ func (h *ExerciseHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, ejercicioUpdate)
 }
 
+// @Summary Eliminar ejercicio
+// @Description Elimina un ejercicio del sistema
+// @Tags ejercicios
+// @Accept json
+// @Produce json
+// @Param id path int true "ID del ejercicio"
+// @Success 204 "Ejercicio eliminado"
+// @Failure 400 {object} map[string]interface{} "ID inválido"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /ejercicio/{id} [delete]
 func (h *ExerciseHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	idUint, err := strconv.ParseUint(id, 10, 64)
@@ -93,6 +142,16 @@ func (h *ExerciseHandler) Delete(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }
 
+// @Summary Obtener ejercicios por grupo muscular
+// @Description Obtiene todos los ejercicios de un grupo muscular específico
+// @Tags ejercicios
+// @Accept json
+// @Produce json
+// @Param id path int true "ID del grupo muscular"
+// @Success 200 {array} model.Ejercicio
+// @Failure 400 {object} map[string]interface{} "ID inválido"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /ejercicio/grupo-muscular/{id} [get]
 func (h *ExerciseHandler) GetByMuscleGroup(c *gin.Context) {
 	id := c.Param("id")
 	idUint, err := strconv.ParseUint(id, 10, 64)

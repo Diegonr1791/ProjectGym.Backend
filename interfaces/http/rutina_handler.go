@@ -23,6 +23,14 @@ func NewRutinaHandler(r *gin.Engine, usecase *rutina.RutinaService) {
 	r.DELETE("/rutinas/:id", handler.Eliminar)
 }
 
+// @Summary Obtener todas las rutinas
+// @Description Obtiene la lista completa de rutinas
+// @Tags rutinas
+// @Accept json
+// @Produce json
+// @Success 200 {array} model.Rutina
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /rutinas [get]
 func (h *RutinaHandler) ObtenerTodas(c *gin.Context) {
 	rutinas, err := h.usecase.Obtener()
 	if err != nil {
@@ -33,6 +41,15 @@ func (h *RutinaHandler) ObtenerTodas(c *gin.Context) {
 	c.JSON(http.StatusOK, rutinas)
 }
 
+// @Summary Obtener rutina por ID
+// @Description Obtiene una rutina específica por su ID
+// @Tags rutinas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID de la rutina"
+// @Success 200 {object} model.Rutina
+// @Failure 404 {object} map[string]interface{} "Rutina no encontrada"
+// @Router /rutinas/{id} [get]
 func (h *RutinaHandler) ObtenerporId(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	rutina, err := h.usecase.ObtenerPorID(uint(id))
@@ -44,6 +61,16 @@ func (h *RutinaHandler) ObtenerporId(c *gin.Context) {
 	c.JSON(http.StatusOK, rutina)
 }
 
+// @Summary Crear nueva rutina
+// @Description Crea una nueva rutina en el sistema
+// @Tags rutinas
+// @Accept json
+// @Produce json
+// @Param rutina body model.Rutina true "Datos de la rutina"
+// @Success 200 {object} model.Rutina
+// @Failure 400 {object} map[string]interface{} "Datos inválidos"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /rutinas [post]
 func (h *RutinaHandler) Crear(c *gin.Context) {
 	var rutina model.Rutina
 	if err := c.ShouldBindJSON(&rutina); err != nil {
@@ -59,6 +86,18 @@ func (h *RutinaHandler) Crear(c *gin.Context) {
 	c.JSON(http.StatusOK, rutina)
 }
 
+// @Summary Actualizar rutina
+// @Description Actualiza una rutina existente
+// @Tags rutinas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID de la rutina"
+// @Param rutina body model.Rutina true "Datos actualizados de la rutina"
+// @Success 200 {object} model.Rutina
+// @Failure 400 {object} map[string]interface{} "Datos inválidos"
+// @Failure 404 {object} map[string]interface{} "Rutina no encontrada"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /rutinas/{id} [put]
 func (h *RutinaHandler) Actualizar(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 
@@ -82,6 +121,15 @@ func (h *RutinaHandler) Actualizar(c *gin.Context) {
 	c.JSON(http.StatusOK, r)
 }
 
+// @Summary Eliminar rutina
+// @Description Elimina una rutina del sistema
+// @Tags rutinas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID de la rutina"
+// @Success 200 {object} map[string]interface{} "Rutina eliminada correctamente"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Router /rutinas/{id} [delete]
 func (h *RutinaHandler) Eliminar(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 

@@ -3,6 +3,8 @@ package config
 import (
 	http "github.com/Diegonr1791/GymBro/interfaces/http"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // Server configura y maneja el servidor HTTP
@@ -28,6 +30,9 @@ func NewServer(container *Container) *Server {
 
 // setupRoutes configura todas las rutas de la aplicación
 func (s *Server) setupRoutes() {
+	// Configurar Swagger
+	s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	// Configurar handlers
 	http.NewUsuarioHandler(s.router, s.container.UsuarioService)
 	http.NewRutinaHandler(s.router, s.container.RutinaService)
