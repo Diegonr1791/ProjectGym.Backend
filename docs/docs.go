@@ -24,8 +24,151 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/login": {
+            "post": {
+                "description": "Autentica un usuario y genera access token y refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "autenticación"
+                ],
+                "summary": "Iniciar sesión",
+                "parameters": [
+                    {
+                        "description": "Credenciales de login",
+                        "name": "credentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Credenciales inválidas",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "description": "Invalida el refresh token (en producción, agregar a blacklist)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "autenticación"
+                ],
+                "summary": "Cerrar sesión",
+                "parameters": [
+                    {
+                        "description": "Refresh token a invalidar",
+                        "name": "refresh",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.RefreshRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sesión cerrada exitosamente",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Renueva el access token usando un refresh token válido",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "autenticación"
+                ],
+                "summary": "Refrescar token",
+                "parameters": [
+                    {
+                        "description": "Refresh token",
+                        "name": "refresh",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.RefreshRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.RefreshResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Refresh token inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/ejercicio": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene la lista completa de ejercicios",
                 "consumes": [
                     "application/json"
@@ -57,6 +200,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Crea un nuevo ejercicio en el sistema",
                 "consumes": [
                     "application/json"
@@ -105,6 +253,11 @@ const docTemplate = `{
         },
         "/ejercicio/grupo-muscular/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene todos los ejercicios de un grupo muscular específico",
                 "consumes": [
                     "application/json"
@@ -154,6 +307,11 @@ const docTemplate = `{
         },
         "/ejercicio/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene un ejercicio específico por su ID",
                 "consumes": [
                     "application/json"
@@ -198,6 +356,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Actualiza un ejercicio existente",
                 "consumes": [
                     "application/json"
@@ -251,6 +414,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Elimina un ejercicio del sistema",
                 "consumes": [
                     "application/json"
@@ -294,6 +462,11 @@ const docTemplate = `{
         },
         "/favorita": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene la lista completa de favoritas",
                 "consumes": [
                     "application/json"
@@ -325,6 +498,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Crea una nueva favorita en el sistema",
                 "consumes": [
                     "application/json"
@@ -373,6 +551,11 @@ const docTemplate = `{
         },
         "/favorita/usuario/{usuario_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene todas las favoritas de un usuario específico",
                 "consumes": [
                     "application/json"
@@ -415,6 +598,11 @@ const docTemplate = `{
         },
         "/favorita/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene una favorita específica por su ID",
                 "consumes": [
                     "application/json"
@@ -452,6 +640,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Actualiza una favorita existente",
                 "consumes": [
                     "application/json"
@@ -505,6 +698,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Elimina una favorita del sistema",
                 "consumes": [
                     "application/json"
@@ -541,6 +739,11 @@ const docTemplate = `{
         },
         "/grupo-muscular": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene la lista completa de grupos musculares",
                 "consumes": [
                     "application/json"
@@ -572,6 +775,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Crea un nuevo grupo muscular en el sistema",
                 "consumes": [
                     "application/json"
@@ -620,6 +828,11 @@ const docTemplate = `{
         },
         "/grupo-muscular/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene un grupo muscular específico por su ID",
                 "consumes": [
                     "application/json"
@@ -657,6 +870,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Actualiza un grupo muscular existente",
                 "consumes": [
                     "application/json"
@@ -710,6 +928,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Elimina un grupo muscular del sistema",
                 "consumes": [
                     "application/json"
@@ -794,6 +1017,11 @@ const docTemplate = `{
         },
         "/medicion": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene la lista completa de mediciones",
                 "consumes": [
                     "application/json"
@@ -825,6 +1053,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Crea una nueva medición en el sistema",
                 "consumes": [
                     "application/json"
@@ -915,6 +1148,11 @@ const docTemplate = `{
         },
         "/medicion/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene una medición específica por su ID",
                 "consumes": [
                     "application/json"
@@ -952,6 +1190,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Actualiza una medición existente",
                 "consumes": [
                     "application/json"
@@ -1005,6 +1248,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Elimina una medición del sistema",
                 "consumes": [
                     "application/json"
@@ -1041,6 +1289,11 @@ const docTemplate = `{
         },
         "/rutina-gm": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene la lista completa de rutinas de grupo muscular",
                 "consumes": [
                     "application/json"
@@ -1072,6 +1325,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Crea una nueva rutina de grupo muscular en el sistema",
                 "consumes": [
                     "application/json"
@@ -1120,6 +1378,11 @@ const docTemplate = `{
         },
         "/rutina-gm/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene una rutina de grupo muscular específica por su ID",
                 "consumes": [
                     "application/json"
@@ -1157,6 +1420,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Actualiza una rutina de grupo muscular existente",
                 "consumes": [
                     "application/json"
@@ -1217,6 +1485,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Elimina una rutina de grupo muscular del sistema",
                 "consumes": [
                     "application/json"
@@ -1257,6 +1530,11 @@ const docTemplate = `{
         },
         "/rutina/grupo-muscular/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene todos los grupos musculares asociados a una rutina específica",
                 "consumes": [
                     "application/json"
@@ -1299,6 +1577,11 @@ const docTemplate = `{
         },
         "/rutinas": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene la lista completa de rutinas",
                 "consumes": [
                     "application/json"
@@ -1330,6 +1613,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Crea una nueva rutina en el sistema",
                 "consumes": [
                     "application/json"
@@ -1378,6 +1666,11 @@ const docTemplate = `{
         },
         "/rutinas/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene una rutina específica por su ID",
                 "consumes": [
                     "application/json"
@@ -1415,6 +1708,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Actualiza una rutina existente",
                 "consumes": [
                     "application/json"
@@ -1475,6 +1773,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Elimina una rutina del sistema",
                 "consumes": [
                     "application/json"
@@ -1515,6 +1818,11 @@ const docTemplate = `{
         },
         "/sesion": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene la lista completa de sesiones de entrenamiento",
                 "consumes": [
                     "application/json"
@@ -1546,6 +1854,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Crea una nueva sesión de entrenamiento en el sistema",
                 "consumes": [
                     "application/json"
@@ -1594,6 +1907,11 @@ const docTemplate = `{
         },
         "/sesion-ejercicio": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene la lista completa de ejercicios de sesión",
                 "consumes": [
                     "application/json"
@@ -1602,7 +1920,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesiones-ejercicios"
+                    "sesion-ejercicio"
                 ],
                 "summary": "Obtener todos los ejercicios de sesión",
                 "responses": {
@@ -1625,6 +1943,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Crea un nuevo ejercicio de sesión en el sistema",
                 "consumes": [
                     "application/json"
@@ -1633,13 +1956,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesiones-ejercicios"
+                    "sesion-ejercicio"
                 ],
                 "summary": "Crear nuevo ejercicio de sesión",
                 "parameters": [
                     {
                         "description": "Datos del ejercicio de sesión",
-                        "name": "sesionEjercicio",
+                        "name": "sesion_ejercicio",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -1727,6 +2050,11 @@ const docTemplate = `{
         },
         "/sesion-ejercicio/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene un ejercicio de sesión específico por su ID",
                 "consumes": [
                     "application/json"
@@ -1735,7 +2063,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesiones-ejercicios"
+                    "sesion-ejercicio"
                 ],
                 "summary": "Obtener ejercicio de sesión por ID",
                 "parameters": [
@@ -1764,6 +2092,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Actualiza un ejercicio de sesión existente",
                 "consumes": [
                     "application/json"
@@ -1772,7 +2105,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesiones-ejercicios"
+                    "sesion-ejercicio"
                 ],
                 "summary": "Actualizar ejercicio de sesión",
                 "parameters": [
@@ -1785,7 +2118,7 @@ const docTemplate = `{
                     },
                     {
                         "description": "Datos actualizados del ejercicio de sesión",
-                        "name": "sesionEjercicio",
+                        "name": "sesion_ejercicio",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -1817,6 +2150,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Elimina un ejercicio de sesión del sistema",
                 "consumes": [
                     "application/json"
@@ -1825,7 +2163,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesiones-ejercicios"
+                    "sesion-ejercicio"
                 ],
                 "summary": "Eliminar ejercicio de sesión",
                 "parameters": [
@@ -1853,6 +2191,11 @@ const docTemplate = `{
         },
         "/sesion/fecha": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene todas las sesiones dentro de un rango de fechas específico",
                 "consumes": [
                     "application/json"
@@ -1909,6 +2252,11 @@ const docTemplate = `{
         },
         "/sesion/usuario/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene todas las sesiones de un usuario específico",
                 "consumes": [
                     "application/json"
@@ -1951,6 +2299,11 @@ const docTemplate = `{
         },
         "/sesion/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene una sesión específica por su ID",
                 "consumes": [
                     "application/json"
@@ -1988,6 +2341,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Actualiza una sesión existente",
                 "consumes": [
                     "application/json"
@@ -2041,6 +2399,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Elimina una sesión del sistema",
                 "consumes": [
                     "application/json"
@@ -2077,6 +2440,11 @@ const docTemplate = `{
         },
         "/tipo-ejercicio": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene la lista completa de tipos de ejercicio",
                 "consumes": [
                     "application/json"
@@ -2108,6 +2476,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Crea un nuevo tipo de ejercicio en el sistema",
                 "consumes": [
                     "application/json"
@@ -2156,6 +2529,11 @@ const docTemplate = `{
         },
         "/tipo-ejercicio/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene un tipo de ejercicio específico por su ID",
                 "consumes": [
                     "application/json"
@@ -2183,8 +2561,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/model.TipoEjercicio"
                         }
                     },
-                    "500": {
-                        "description": "Error interno del servidor",
+                    "404": {
+                        "description": "Tipo de ejercicio no encontrado",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2193,6 +2571,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Actualiza un tipo de ejercicio existente",
                 "consumes": [
                     "application/json"
@@ -2253,6 +2636,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Elimina un tipo de ejercicio del sistema",
                 "consumes": [
                     "application/json"
@@ -2289,6 +2677,11 @@ const docTemplate = `{
         },
         "/usuarios": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene la lista completa de usuarios",
                 "consumes": [
                     "application/json"
@@ -2368,6 +2761,11 @@ const docTemplate = `{
         },
         "/usuarios/email/{email}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene un usuario específico por su email",
                 "consumes": [
                     "application/json"
@@ -2407,6 +2805,11 @@ const docTemplate = `{
         },
         "/usuarios/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtiene un usuario específico por su ID",
                 "consumes": [
                     "application/json"
@@ -2444,6 +2847,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Actualiza los datos de un usuario existente",
                 "consumes": [
                     "application/json"
@@ -2504,6 +2912,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Elimina un usuario del sistema",
                 "consumes": [
                     "application/json"
@@ -2544,6 +2957,65 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "http.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "object",
+                    "properties": {
+                        "email": {
+                            "type": "string"
+                        },
+                        "id": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
+        "http.RefreshRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.RefreshResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Ejercicio": {
             "type": "object",
             "properties": {

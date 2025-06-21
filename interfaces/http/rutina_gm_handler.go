@@ -13,7 +13,7 @@ type RutinaGMHandler struct {
 	usecase *rutinaGM.RutinaGrupoMuscularUsecase
 }
 
-func NewRutinaGMHandler(router *gin.Engine, uc *rutinaGM.RutinaGrupoMuscularUsecase) {
+func NewRutinaGMHandler(router gin.IRouter, uc *rutinaGM.RutinaGrupoMuscularUsecase) {
 	handler := &RutinaGMHandler{uc}
 
 	router.POST("/rutina-gm", handler.Crear)
@@ -29,6 +29,7 @@ func NewRutinaGMHandler(router *gin.Engine, uc *rutinaGM.RutinaGrupoMuscularUsec
 // @Tags rutinas-grupo-muscular
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param rutina body model.RutinaGrupoMuscular true "Datos de la rutina de grupo muscular"
 // @Success 201 {object} model.RutinaGrupoMuscular
 // @Failure 400 {object} map[string]interface{} "Datos inválidos"
@@ -54,6 +55,7 @@ func (h *RutinaGMHandler) Crear(c *gin.Context) {
 // @Tags rutinas-grupo-muscular
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} model.RutinaGrupoMuscular
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
 // @Router /rutina-gm [get]
@@ -72,6 +74,7 @@ func (h *RutinaGMHandler) ObtenerTodos(c *gin.Context) {
 // @Tags rutinas-grupo-muscular
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la rutina de grupo muscular"
 // @Success 200 {object} model.RutinaGrupoMuscular
 // @Failure 404 {object} map[string]interface{} "Rutina grupo muscular no encontrada"
@@ -92,6 +95,7 @@ func (h *RutinaGMHandler) ObtenerPorID(c *gin.Context) {
 // @Tags rutinas-grupo-muscular
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la rutina de grupo muscular"
 // @Param rutina body model.RutinaGrupoMuscular true "Datos actualizados de la rutina de grupo muscular"
 // @Success 200 {object} model.RutinaGrupoMuscular
@@ -127,6 +131,7 @@ func (h *RutinaGMHandler) Actualizar(c *gin.Context) {
 // @Tags rutinas-grupo-muscular
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la rutina de grupo muscular"
 // @Success 200 {object} map[string]interface{} "Rutina grupo muscular eliminada correctamente"
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
@@ -146,6 +151,7 @@ func (h *RutinaGMHandler) Eliminar(c *gin.Context) {
 // @Tags rutinas-grupo-muscular
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la rutina"
 // @Success 200 {array} model.GrupoMuscular
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"

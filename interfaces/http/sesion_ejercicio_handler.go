@@ -14,7 +14,7 @@ type SessionExerciseHandler struct {
 	uc *usecase.SessionExerciseUsecase
 }
 
-func NewSessionExerciseHandler(r *gin.Engine, uc *usecase.SessionExerciseUsecase) {
+func NewSessionExerciseHandler(r gin.IRouter, uc *usecase.SessionExerciseUsecase) {
 	h := &SessionExerciseHandler{uc}
 
 	r.POST("/sesion-ejercicio", h.CreateSessionExercise)
@@ -27,10 +27,11 @@ func NewSessionExerciseHandler(r *gin.Engine, uc *usecase.SessionExerciseUsecase
 
 // @Summary Crear nuevo ejercicio de sesión
 // @Description Crea un nuevo ejercicio de sesión en el sistema
-// @Tags sesiones-ejercicios
+// @Tags sesion-ejercicio
 // @Accept json
 // @Produce json
-// @Param sesionEjercicio body model.SesionEjercicio true "Datos del ejercicio de sesión"
+// @Security BearerAuth
+// @Param sesion_ejercicio body model.SesionEjercicio true "Datos del ejercicio de sesión"
 // @Success 201 {object} model.SesionEjercicio
 // @Failure 400 {object} map[string]interface{} "Datos inválidos"
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
@@ -50,9 +51,10 @@ func (h *SessionExerciseHandler) CreateSessionExercise(c *gin.Context) {
 
 // @Summary Obtener todos los ejercicios de sesión
 // @Description Obtiene la lista completa de ejercicios de sesión
-// @Tags sesiones-ejercicios
+// @Tags sesion-ejercicio
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} model.SesionEjercicio
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
 // @Router /sesion-ejercicio [get]
@@ -67,9 +69,10 @@ func (h *SessionExerciseHandler) GetAllSessionExercises(c *gin.Context) {
 
 // @Summary Obtener ejercicio de sesión por ID
 // @Description Obtiene un ejercicio de sesión específico por su ID
-// @Tags sesiones-ejercicios
+// @Tags sesion-ejercicio
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del ejercicio de sesión"
 // @Success 200 {object} model.SesionEjercicio
 // @Failure 404 {object} map[string]interface{} "Ejercicio de sesión no encontrado"
@@ -86,11 +89,12 @@ func (h *SessionExerciseHandler) GetSessionExerciseById(c *gin.Context) {
 
 // @Summary Actualizar ejercicio de sesión
 // @Description Actualiza un ejercicio de sesión existente
-// @Tags sesiones-ejercicios
+// @Tags sesion-ejercicio
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del ejercicio de sesión"
-// @Param sesionEjercicio body model.SesionEjercicio true "Datos actualizados del ejercicio de sesión"
+// @Param sesion_ejercicio body model.SesionEjercicio true "Datos actualizados del ejercicio de sesión"
 // @Success 200 {object} model.SesionEjercicio
 // @Failure 400 {object} map[string]interface{} "Datos inválidos"
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
@@ -112,9 +116,10 @@ func (h *SessionExerciseHandler) UpdateSessionExercise(c *gin.Context) {
 
 // @Summary Eliminar ejercicio de sesión
 // @Description Elimina un ejercicio de sesión del sistema
-// @Tags sesiones-ejercicios
+// @Tags sesion-ejercicio
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del ejercicio de sesión"
 // @Success 204 "Ejercicio de sesión eliminado"
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"

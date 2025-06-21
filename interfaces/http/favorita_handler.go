@@ -13,7 +13,7 @@ type FavoritaHandler struct {
 	uc *usecase.FavoritaUsecase
 }
 
-func NewFavoritaHandler(r *gin.Engine, uc *usecase.FavoritaUsecase) {
+func NewFavoritaHandler(r gin.IRouter, uc *usecase.FavoritaUsecase) {
 	h := &FavoritaHandler{uc}
 
 	r.POST("/favorita", h.Crear)
@@ -29,6 +29,7 @@ func NewFavoritaHandler(r *gin.Engine, uc *usecase.FavoritaUsecase) {
 // @Tags favoritas
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param favorita body model.Favorita true "Datos de la favorita"
 // @Success 201 {object} model.Favorita
 // @Failure 400 {object} map[string]interface{} "Datos inválidos"
@@ -52,6 +53,7 @@ func (h *FavoritaHandler) Crear(c *gin.Context) {
 // @Tags favoritas
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} model.Favorita
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
 // @Router /favorita [get]
@@ -69,6 +71,7 @@ func (h *FavoritaHandler) ObtenerTodos(c *gin.Context) {
 // @Tags favoritas
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la favorita"
 // @Success 200 {object} model.Favorita
 // @Failure 404 {object} map[string]interface{} "Favorita no encontrada"
@@ -88,6 +91,7 @@ func (h *FavoritaHandler) ObtenerPorID(c *gin.Context) {
 // @Tags favoritas
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la favorita"
 // @Param favorita body model.Favorita true "Datos actualizados de la favorita"
 // @Success 200 {object} model.Favorita
@@ -114,6 +118,7 @@ func (h *FavoritaHandler) Actualizar(c *gin.Context) {
 // @Tags favoritas
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la favorita"
 // @Success 204 "Favorita eliminada"
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
@@ -132,6 +137,7 @@ func (h *FavoritaHandler) Eliminar(c *gin.Context) {
 // @Tags favoritas
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param usuario_id path int true "ID del usuario"
 // @Success 200 {array} model.Favorita
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"

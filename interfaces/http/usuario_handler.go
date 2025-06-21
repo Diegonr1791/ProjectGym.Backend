@@ -13,7 +13,7 @@ type UsuarioHandler struct {
 	usecase *usuario.UsuarioUsecase
 }
 
-func NewUsuarioHandler(r *gin.Engine, usecase *usuario.UsuarioUsecase) {
+func NewUsuarioHandler(r gin.IRouter, usecase *usuario.UsuarioUsecase) {
 	handler := &UsuarioHandler{usecase}
 
 	r.GET("/usuarios", handler.ObtenerTodos)
@@ -85,6 +85,7 @@ func (h *UsuarioHandler) Login(c *gin.Context) {
 // @Tags usuarios
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} model.Usuario
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
 // @Router /usuarios [get]
@@ -103,6 +104,7 @@ func (h *UsuarioHandler) ObtenerTodos(c *gin.Context) {
 // @Tags usuarios
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del usuario"
 // @Success 200 {object} model.Usuario
 // @Failure 404 {object} map[string]interface{} "Usuario no encontrado"
@@ -124,6 +126,7 @@ func (h *UsuarioHandler) Obtener(c *gin.Context) {
 // @Tags usuarios
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param email path string true "Email del usuario"
 // @Success 200 {object} model.Usuario
 // @Failure 404 {object} map[string]interface{} "Usuario no encontrado"
@@ -145,6 +148,7 @@ func (h *UsuarioHandler) ObtenerUsuarioPorEmail(c *gin.Context) {
 // @Tags usuarios
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del usuario"
 // @Param usuario body model.Usuario true "Datos actualizados del usuario"
 // @Success 200 {object} model.Usuario
@@ -179,6 +183,7 @@ func (h *UsuarioHandler) Actualizar(c *gin.Context) {
 // @Tags usuarios
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del usuario"
 // @Success 200 {object} map[string]interface{} "Usuario eliminado correctamente"
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"

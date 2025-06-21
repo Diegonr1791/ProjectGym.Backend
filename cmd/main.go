@@ -35,7 +35,7 @@ func main() {
 	container := config.NewContainer()
 
 	// Crear y configurar servidor
-	server := config.NewServer(container)
+	server := config.NewServer(container, cfg)
 
 	// Iniciar servidor
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)

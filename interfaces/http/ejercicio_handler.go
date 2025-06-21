@@ -13,7 +13,7 @@ type ExerciseHandler struct {
 	uc *usecase.ExerciseUsecase
 }
 
-func NewExerciseHandler(r *gin.Engine, uc *usecase.ExerciseUsecase) {
+func NewExerciseHandler(r gin.IRouter, uc *usecase.ExerciseUsecase) {
 	h := &ExerciseHandler{uc}
 
 	r.GET("/ejercicio", h.GetAll)
@@ -29,6 +29,7 @@ func NewExerciseHandler(r *gin.Engine, uc *usecase.ExerciseUsecase) {
 // @Tags ejercicios
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} model.Ejercicio
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
 // @Router /ejercicio [get]
@@ -46,6 +47,7 @@ func (h *ExerciseHandler) GetAll(c *gin.Context) {
 // @Tags ejercicios
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del ejercicio"
 // @Success 200 {object} model.Ejercicio
 // @Failure 400 {object} map[string]interface{} "ID inválido"
@@ -72,6 +74,7 @@ func (h *ExerciseHandler) GetById(c *gin.Context) {
 // @Tags ejercicios
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param ejercicio body model.Ejercicio true "Datos del ejercicio"
 // @Success 201 {object} model.Ejercicio
 // @Failure 400 {object} map[string]interface{} "Datos inválidos"
@@ -95,6 +98,7 @@ func (h *ExerciseHandler) Create(c *gin.Context) {
 // @Tags ejercicios
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del ejercicio"
 // @Param ejercicio body model.Ejercicio true "Datos actualizados del ejercicio"
 // @Success 200 {object} model.Ejercicio
@@ -123,6 +127,7 @@ func (h *ExerciseHandler) Update(c *gin.Context) {
 // @Tags ejercicios
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del ejercicio"
 // @Success 204 "Ejercicio eliminado"
 // @Failure 400 {object} map[string]interface{} "ID inválido"
@@ -147,6 +152,7 @@ func (h *ExerciseHandler) Delete(c *gin.Context) {
 // @Tags ejercicios
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del grupo muscular"
 // @Success 200 {array} model.Ejercicio
 // @Failure 400 {object} map[string]interface{} "ID inválido"

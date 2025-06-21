@@ -14,7 +14,7 @@ type TypeExerciseHandler struct {
 	uc *usecase.TypeExerciseUsecase
 }
 
-func NewTypeExerciseHandler(router *gin.Engine, uc *usecase.TypeExerciseUsecase) {
+func NewTypeExerciseHandler(router gin.IRouter, uc *usecase.TypeExerciseUsecase) {
 	handler := &TypeExerciseHandler{uc}
 
 	router.GET("/tipo-ejercicio", handler.GetAll)
@@ -29,6 +29,7 @@ func NewTypeExerciseHandler(router *gin.Engine, uc *usecase.TypeExerciseUsecase)
 // @Tags tipos-ejercicio
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} model.TipoEjercicio
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
 // @Router /tipo-ejercicio [get]
@@ -46,15 +47,16 @@ func (h *TypeExerciseHandler) GetAll(c *gin.Context) {
 // @Tags tipos-ejercicio
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del tipo de ejercicio"
 // @Success 200 {object} model.TipoEjercicio
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
+// @Failure 404 {object} map[string]interface{} "Tipo de ejercicio no encontrado"
 // @Router /tipo-ejercicio/{id} [get]
 func (h *TypeExerciseHandler) GetById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	tipoEjercicio, err := h.uc.GetById(uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tipo de ejercicio no encontrado"})
 		return
 	}
 	c.JSON(http.StatusOK, tipoEjercicio)
@@ -65,6 +67,7 @@ func (h *TypeExerciseHandler) GetById(c *gin.Context) {
 // @Tags tipos-ejercicio
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param tipo body model.TipoEjercicio true "Datos del tipo de ejercicio"
 // @Success 201 {object} model.TipoEjercicio
 // @Failure 400 {object} map[string]interface{} "Datos inválidos"
@@ -88,6 +91,7 @@ func (h *TypeExerciseHandler) Create(c *gin.Context) {
 // @Tags tipos-ejercicio
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del tipo de ejercicio"
 // @Param tipo body model.TipoEjercicio true "Datos actualizados del tipo de ejercicio"
 // @Success 200 {object} model.TipoEjercicio
@@ -117,6 +121,7 @@ func (h *TypeExerciseHandler) Update(c *gin.Context) {
 // @Tags tipos-ejercicio
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del tipo de ejercicio"
 // @Success 204 "Tipo de ejercicio eliminado"
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"

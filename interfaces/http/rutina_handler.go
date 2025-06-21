@@ -13,7 +13,7 @@ type RutinaHandler struct {
 	usecase *rutina.RutinaService
 }
 
-func NewRutinaHandler(r *gin.Engine, usecase *rutina.RutinaService) {
+func NewRutinaHandler(r gin.IRouter, usecase *rutina.RutinaService) {
 	handler := &RutinaHandler{usecase}
 
 	r.GET("/rutinas", handler.ObtenerTodas)
@@ -28,6 +28,7 @@ func NewRutinaHandler(r *gin.Engine, usecase *rutina.RutinaService) {
 // @Tags rutinas
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} model.Rutina
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
 // @Router /rutinas [get]
@@ -46,6 +47,7 @@ func (h *RutinaHandler) ObtenerTodas(c *gin.Context) {
 // @Tags rutinas
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la rutina"
 // @Success 200 {object} model.Rutina
 // @Failure 404 {object} map[string]interface{} "Rutina no encontrada"
@@ -66,6 +68,7 @@ func (h *RutinaHandler) ObtenerporId(c *gin.Context) {
 // @Tags rutinas
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param rutina body model.Rutina true "Datos de la rutina"
 // @Success 200 {object} model.Rutina
 // @Failure 400 {object} map[string]interface{} "Datos inválidos"
@@ -91,6 +94,7 @@ func (h *RutinaHandler) Crear(c *gin.Context) {
 // @Tags rutinas
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la rutina"
 // @Param rutina body model.Rutina true "Datos actualizados de la rutina"
 // @Success 200 {object} model.Rutina
@@ -126,6 +130,7 @@ func (h *RutinaHandler) Actualizar(c *gin.Context) {
 // @Tags rutinas
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la rutina"
 // @Success 200 {object} map[string]interface{} "Rutina eliminada correctamente"
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"

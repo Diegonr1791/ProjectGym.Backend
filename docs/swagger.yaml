@@ -1,5 +1,43 @@
 basePath: /
 definitions:
+  http.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  http.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+      user:
+        properties:
+          email:
+            type: string
+          id:
+            type: integer
+        type: object
+    type: object
+  http.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  http.RefreshResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
   model.Ejercicio:
     properties:
       grupo_muscular_id:
@@ -134,6 +172,98 @@ info:
   title: GymBro API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica un usuario y genera access token y refresh token
+      parameters:
+      - description: Credenciales de login
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/http.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.LoginResponse'
+        "400":
+          description: Datos inválidos
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Credenciales inválidas
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Iniciar sesión
+      tags:
+      - autenticación
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalida el refresh token (en producción, agregar a blacklist)
+      parameters:
+      - description: Refresh token a invalidar
+        in: body
+        name: refresh
+        required: true
+        schema:
+          $ref: '#/definitions/http.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sesión cerrada exitosamente
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Datos inválidos
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Cerrar sesión
+      tags:
+      - autenticación
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Renueva el access token usando un refresh token válido
+      parameters:
+      - description: Refresh token
+        in: body
+        name: refresh
+        required: true
+        schema:
+          $ref: '#/definitions/http.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.RefreshResponse'
+        "400":
+          description: Datos inválidos
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Refresh token inválido
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refrescar token
+      tags:
+      - autenticación
   /ejercicio:
     get:
       consumes:
@@ -153,6 +283,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener todos los ejercicios
       tags:
       - ejercicios
@@ -184,6 +316,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Crear nuevo ejercicio
       tags:
       - ejercicios
@@ -213,6 +347,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Eliminar ejercicio
       tags:
       - ejercicios
@@ -243,6 +379,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener ejercicio por ID
       tags:
       - ejercicios
@@ -279,6 +417,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Actualizar ejercicio
       tags:
       - ejercicios
@@ -312,6 +452,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener ejercicios por grupo muscular
       tags:
       - ejercicios
@@ -334,6 +476,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener todas las favoritas
       tags:
       - favoritas
@@ -365,6 +509,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Crear nueva favorita
       tags:
       - favoritas
@@ -389,6 +535,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Eliminar favorita
       tags:
       - favoritas
@@ -414,6 +562,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener favorita por ID
       tags:
       - favoritas
@@ -450,6 +600,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Actualizar favorita
       tags:
       - favoritas
@@ -478,6 +630,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener favoritas por usuario
       tags:
       - favoritas
@@ -500,6 +654,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener todos los grupos musculares
       tags:
       - grupos-musculares
@@ -531,6 +687,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Crear nuevo grupo muscular
       tags:
       - grupos-musculares
@@ -555,6 +713,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Eliminar grupo muscular
       tags:
       - grupos-musculares
@@ -580,6 +740,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener grupo muscular por ID
       tags:
       - grupos-musculares
@@ -616,6 +778,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Actualizar grupo muscular
       tags:
       - grupos-musculares
@@ -670,6 +834,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener todas las mediciones
       tags:
       - mediciones
@@ -701,6 +867,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Crear nueva medición
       tags:
       - mediciones
@@ -725,6 +893,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Eliminar medición
       tags:
       - mediciones
@@ -750,6 +920,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener medición por ID
       tags:
       - mediciones
@@ -786,6 +958,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Actualizar medición
       tags:
       - mediciones
@@ -836,6 +1010,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener todas las rutinas de grupo muscular
       tags:
       - rutinas-grupo-muscular
@@ -867,6 +1043,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Crear nueva rutina de grupo muscular
       tags:
       - rutinas-grupo-muscular
@@ -894,6 +1072,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Eliminar rutina de grupo muscular
       tags:
       - rutinas-grupo-muscular
@@ -919,6 +1099,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener rutina de grupo muscular por ID
       tags:
       - rutinas-grupo-muscular
@@ -960,6 +1142,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Actualizar rutina de grupo muscular
       tags:
       - rutinas-grupo-muscular
@@ -988,6 +1172,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener grupos musculares por rutina
       tags:
       - rutinas-grupo-muscular
@@ -1010,6 +1196,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener todas las rutinas
       tags:
       - rutinas
@@ -1041,6 +1229,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Crear nueva rutina
       tags:
       - rutinas
@@ -1068,6 +1258,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Eliminar rutina
       tags:
       - rutinas
@@ -1093,6 +1285,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener rutina por ID
       tags:
       - rutinas
@@ -1134,6 +1328,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Actualizar rutina
       tags:
       - rutinas
@@ -1156,6 +1352,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener todas las sesiones
       tags:
       - sesiones
@@ -1187,6 +1385,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Crear nueva sesión
       tags:
       - sesiones
@@ -1209,9 +1409,11 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener todos los ejercicios de sesión
       tags:
-      - sesiones-ejercicios
+      - sesion-ejercicio
     post:
       consumes:
       - application/json
@@ -1219,7 +1421,7 @@ paths:
       parameters:
       - description: Datos del ejercicio de sesión
         in: body
-        name: sesionEjercicio
+        name: sesion_ejercicio
         required: true
         schema:
           $ref: '#/definitions/model.SesionEjercicio'
@@ -1240,9 +1442,11 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Crear nuevo ejercicio de sesión
       tags:
-      - sesiones-ejercicios
+      - sesion-ejercicio
   /sesion-ejercicio/{id}:
     delete:
       consumes:
@@ -1264,9 +1468,11 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Eliminar ejercicio de sesión
       tags:
-      - sesiones-ejercicios
+      - sesion-ejercicio
     get:
       consumes:
       - application/json
@@ -1289,9 +1495,11 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener ejercicio de sesión por ID
       tags:
-      - sesiones-ejercicios
+      - sesion-ejercicio
     put:
       consumes:
       - application/json
@@ -1304,7 +1512,7 @@ paths:
         type: integer
       - description: Datos actualizados del ejercicio de sesión
         in: body
-        name: sesionEjercicio
+        name: sesion_ejercicio
         required: true
         schema:
           $ref: '#/definitions/model.SesionEjercicio'
@@ -1325,9 +1533,11 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Actualizar ejercicio de sesión
       tags:
-      - sesiones-ejercicios
+      - sesion-ejercicio
   /sesion-ejercicio/sesion/{id}:
     get:
       consumes:
@@ -1385,6 +1595,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Eliminar sesión
       tags:
       - sesiones
@@ -1410,6 +1622,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener sesión por ID
       tags:
       - sesiones
@@ -1446,6 +1660,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Actualizar sesión
       tags:
       - sesiones
@@ -1484,6 +1700,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener sesiones por rango de fechas
       tags:
       - sesiones
@@ -1512,6 +1730,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener sesiones por usuario
       tags:
       - sesiones
@@ -1534,6 +1754,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener todos los tipos de ejercicio
       tags:
       - tipos-ejercicio
@@ -1565,6 +1787,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Crear nuevo tipo de ejercicio
       tags:
       - tipos-ejercicio
@@ -1589,6 +1813,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Eliminar tipo de ejercicio
       tags:
       - tipos-ejercicio
@@ -1609,11 +1835,13 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.TipoEjercicio'
-        "500":
-          description: Error interno del servidor
+        "404":
+          description: Tipo de ejercicio no encontrado
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener tipo de ejercicio por ID
       tags:
       - tipos-ejercicio
@@ -1655,6 +1883,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Actualizar tipo de ejercicio
       tags:
       - tipos-ejercicio
@@ -1677,6 +1907,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener todos los usuarios
       tags:
       - usuarios
@@ -1735,6 +1967,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Eliminar usuario
       tags:
       - usuarios
@@ -1760,6 +1994,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener usuario por ID
       tags:
       - usuarios
@@ -1801,6 +2037,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Actualizar usuario
       tags:
       - usuarios
@@ -1827,6 +2065,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Obtener usuario por email
       tags:
       - usuarios

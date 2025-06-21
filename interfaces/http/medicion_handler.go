@@ -13,7 +13,7 @@ type MedicionHandler struct {
 	uc *usecase.MedicionUsecase
 }
 
-func NewMedicionHandler(r *gin.Engine, uc *usecase.MedicionUsecase) {
+func NewMedicionHandler(r gin.IRouter, uc *usecase.MedicionUsecase) {
 	h := &MedicionHandler{uc}
 
 	r.POST("/medicion", h.Crear)
@@ -29,6 +29,7 @@ func NewMedicionHandler(r *gin.Engine, uc *usecase.MedicionUsecase) {
 // @Tags mediciones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param medicion body model.Medicion true "Datos de la medición"
 // @Success 201 {object} model.Medicion
 // @Failure 400 {object} map[string]interface{} "Datos inválidos"
@@ -52,6 +53,7 @@ func (h *MedicionHandler) Crear(c *gin.Context) {
 // @Tags mediciones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} model.Medicion
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
 // @Router /medicion [get]
@@ -69,6 +71,7 @@ func (h *MedicionHandler) ObtenerTodos(c *gin.Context) {
 // @Tags mediciones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la medición"
 // @Success 200 {object} model.Medicion
 // @Failure 404 {object} map[string]interface{} "Medición no encontrada"
@@ -88,6 +91,7 @@ func (h *MedicionHandler) ObtenerPorID(c *gin.Context) {
 // @Tags mediciones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la medición"
 // @Param medicion body model.Medicion true "Datos actualizados de la medición"
 // @Success 200 {object} model.Medicion
@@ -114,6 +118,7 @@ func (h *MedicionHandler) Actualizar(c *gin.Context) {
 // @Tags mediciones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la medición"
 // @Success 204 "Medición eliminada"
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"

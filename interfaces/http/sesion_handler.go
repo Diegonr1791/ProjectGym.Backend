@@ -14,7 +14,7 @@ type SessionHandler struct {
 	uc *usecase.SessionUsecase
 }
 
-func NewSessionHandler(r *gin.Engine, uc *usecase.SessionUsecase) {
+func NewSessionHandler(r gin.IRouter, uc *usecase.SessionUsecase) {
 	h := &SessionHandler{uc}
 
 	r.POST("/sesion", h.CreateSession)
@@ -31,6 +31,7 @@ func NewSessionHandler(r *gin.Engine, uc *usecase.SessionUsecase) {
 // @Tags sesiones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param sesion body model.Sesion true "Datos de la sesión"
 // @Success 201 {object} model.Sesion
 // @Failure 400 {object} map[string]interface{} "Datos inválidos"
@@ -54,6 +55,7 @@ func (h *SessionHandler) CreateSession(c *gin.Context) {
 // @Tags sesiones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} model.Sesion
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
 // @Router /sesion [get]
@@ -71,6 +73,7 @@ func (h *SessionHandler) GetAllSessions(c *gin.Context) {
 // @Tags sesiones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la sesión"
 // @Success 200 {object} model.Sesion
 // @Failure 404 {object} map[string]interface{} "Sesión no encontrada"
@@ -90,6 +93,7 @@ func (h *SessionHandler) GetSessionById(c *gin.Context) {
 // @Tags sesiones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la sesión"
 // @Param sesion body model.Sesion true "Datos actualizados de la sesión"
 // @Success 200 {object} model.Sesion
@@ -116,6 +120,7 @@ func (h *SessionHandler) UpdateSession(c *gin.Context) {
 // @Tags sesiones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID de la sesión"
 // @Success 204 "Sesión eliminada"
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
@@ -134,6 +139,7 @@ func (h *SessionHandler) DeleteSession(c *gin.Context) {
 // @Tags sesiones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del usuario"
 // @Success 200 {array} model.Sesion
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
@@ -153,6 +159,7 @@ func (h *SessionHandler) GetSessionsByUserID(c *gin.Context) {
 // @Tags sesiones
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param fechaDesde query string true "Fecha desde (formato ISO: 2024-01-02T15:04:05Z)"
 // @Param fechaHasta query string true "Fecha hasta (formato ISO: 2024-01-02T15:04:05Z)"
 // @Success 200 {array} model.Sesion

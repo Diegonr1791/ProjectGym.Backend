@@ -13,7 +13,7 @@ type GrupoMuscularHandler struct {
 	uc *usecase.GrupoMuscularUseCase
 }
 
-func NewGrupoMuscularHandler(r *gin.Engine, uc *usecase.GrupoMuscularUseCase) {
+func NewGrupoMuscularHandler(r gin.IRouter, uc *usecase.GrupoMuscularUseCase) {
 	h := &GrupoMuscularHandler{uc}
 
 	r.POST("/grupo-muscular", h.Crear)
@@ -28,6 +28,7 @@ func NewGrupoMuscularHandler(r *gin.Engine, uc *usecase.GrupoMuscularUseCase) {
 // @Tags grupos-musculares
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param grupo body model.GrupoMuscular true "Datos del grupo muscular"
 // @Success 201 {object} model.GrupoMuscular
 // @Failure 400 {object} map[string]interface{} "Datos inválidos"
@@ -51,6 +52,7 @@ func (h *GrupoMuscularHandler) Crear(c *gin.Context) {
 // @Tags grupos-musculares
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} model.GrupoMuscular
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
 // @Router /grupo-muscular [get]
@@ -68,6 +70,7 @@ func (h *GrupoMuscularHandler) ObtenerTodos(c *gin.Context) {
 // @Tags grupos-musculares
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del grupo muscular"
 // @Success 200 {object} model.GrupoMuscular
 // @Failure 404 {object} map[string]interface{} "Grupo muscular no encontrado"
@@ -87,6 +90,7 @@ func (h *GrupoMuscularHandler) ObtenerPorID(c *gin.Context) {
 // @Tags grupos-musculares
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del grupo muscular"
 // @Param grupo body model.GrupoMuscular true "Datos actualizados del grupo muscular"
 // @Success 200 {object} model.GrupoMuscular
@@ -113,6 +117,7 @@ func (h *GrupoMuscularHandler) Actualizar(c *gin.Context) {
 // @Tags grupos-musculares
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID del grupo muscular"
 // @Success 204 "Grupo muscular eliminado"
 // @Failure 500 {object} map[string]interface{} "Error interno del servidor"
