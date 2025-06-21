@@ -24,10 +24,18 @@ import (
 	"log"
 
 	_ "github.com/Diegonr1791/GymBro/docs" // Importar docs generados por swag
-	config "github.com/Diegonr1791/GymBro/internal/config"
+	"github.com/Diegonr1791/GymBro/internal/config"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Cargar variables de entorno desde el archivo .env
+	// Esto debe hacerse antes de cargar la configuración
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Advertencia: No se pudo cargar el archivo .env. Usando valores por defecto y variables de entorno del sistema.")
+	}
+
 	// Cargar configuración
 	cfg := config.LoadConfig()
 
