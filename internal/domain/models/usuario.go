@@ -1,8 +1,9 @@
 package model
 
 type Usuario struct {
-    ID       int    `json:"id"`
-    Nombre   string `json:"nombre"`
-    Email    string `json:"email"`
-    Password string `json:"password"`
+	ID           uint           `gorm:"primaryKey" json:"id"`
+	Nombre       string         `json:"nombre"`
+	Email        string         `gorm:"unique" json:"email"`
+	Password     string         `json:"-"`
+	RefreshToken []RefreshToken `gorm:"foreignKey:UserID" json:"-"`
 }

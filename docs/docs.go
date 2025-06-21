@@ -26,7 +26,7 @@ const docTemplate = `{
     "paths": {
         "/auth/login": {
             "post": {
-                "description": "Autentica un usuario y genera access token y refresh token",
+                "description": "Autentica un usuario, genera un access token y un refresh token en una cookie segura.",
                 "consumes": [
                     "application/json"
                 ],
@@ -68,16 +68,20 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": true
                         }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     }
                 }
             }
         },
         "/auth/logout": {
             "post": {
-                "description": "Invalida el refresh token (en producción, agregar a blacklist)",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Invalida el refresh token del usuario.",
                 "produces": [
                     "application/json"
                 ],
@@ -85,17 +89,6 @@ const docTemplate = `{
                     "autenticación"
                 ],
                 "summary": "Cerrar sesión",
-                "parameters": [
-                    {
-                        "description": "Refresh token a invalidar",
-                        "name": "refresh",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/http.RefreshRequest"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Sesión cerrada exitosamente",
@@ -105,7 +98,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "No hay sesión activa para cerrar",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -116,10 +109,7 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Renueva el access token usando un refresh token válido",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Renueva el access token usando un refresh token válido desde una cookie.",
                 "produces": [
                     "application/json"
                 ],
@@ -127,26 +117,15 @@ const docTemplate = `{
                     "autenticación"
                 ],
                 "summary": "Refrescar token",
-                "parameters": [
-                    {
-                        "description": "Refresh token",
-                        "name": "refresh",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/http.RefreshRequest"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Nuevo access token",
                         "schema": {
-                            "$ref": "#/definitions/http.RefreshResponse"
+                            "$ref": "#/definitions/http.LoginResponse"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Cookie no encontrada",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -959,54 +938,6 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Error interno del servidor",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/login": {
-            "post": {
-                "description": "Autentica un usuario con email y contraseña",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "usuarios"
-                ],
-                "summary": "Iniciar sesión",
-                "parameters": [
-                    {
-                        "description": "Credenciales de login",
-                        "name": "credentials",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.Usuario"
-                        }
-                    },
-                    "400": {
-                        "description": "Datos inválidos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Credenciales inválidas",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2978,9 +2909,6 @@ const docTemplate = `{
                 "access_token": {
                     "type": "string"
                 },
-                "refresh_token": {
-                    "type": "string"
-                },
                 "user": {
                     "type": "object",
                     "properties": {
@@ -2991,28 +2919,6 @@ const docTemplate = `{
                             "type": "integer"
                         }
                     }
-                }
-            }
-        },
-        "http.RefreshRequest": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
-        "http.RefreshResponse": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "type": "string"
-                },
-                "refresh_token": {
-                    "type": "string"
                 }
             }
         },
@@ -3195,9 +3101,6 @@ const docTemplate = `{
                 },
                 "nombre": {
                     "type": "string"
-                },
-                "password": {
-                    "type": "string"
                 }
             }
         }
@@ -3216,7 +3119,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/",
+	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "GymBro API",
 	Description:      "API para gestión de rutinas de gimnasio",

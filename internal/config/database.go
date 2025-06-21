@@ -28,6 +28,8 @@ func ConnectDB() {
 
 	// Auto-migrar las tablas
 	err = db.AutoMigrate(
+		&model.Usuario{},
+		&model.RefreshToken{},
 		&model.GrupoMuscular{},
 		&model.TipoEjercicio{},
 		&model.Ejercicio{},
@@ -35,11 +37,7 @@ func ConnectDB() {
 		&model.Rutina{},
 		&model.Favorita{},
 		&model.Medicion{},
-		//&model.Usuario{},
-		&model.GrupoMuscular{},
-		&model.TipoEjercicio{},
-		&model.Ejercicio{},
-		// Agregar otros modelos aquí según sea necesario
+		&model.Sesion{},
 	)
 	if err != nil {
 		log.Fatal("Error al migrar las tablas: ", err)

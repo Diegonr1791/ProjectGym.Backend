@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,7 +11,9 @@ import (
 // Esto evita el import cycle
 type JWTConfig interface {
 	GetJWTSecret() string
-	GetJWTExpirationMinutes() string
+	GetJWTExpirationMinutes() int
+	GetRefreshExpirationHours() int
+	GetRefreshMaxAge() int // MaxAge en segundos para la cookie
 }
 
 // Claims personalizados para el token JWT de acceso
@@ -32,17 +33,13 @@ type RefreshClaims struct {
 }
 
 // GenerateJWT genera un token JWT de acceso para un usuario dado
-func GenerateJWT(userID int, email string, cfg JWTConfig) (string, error) {
-	expMin, err := strconv.Atoi(cfg.GetJWTExpirationMinutes())
-	if err != nil {
-		expMin = 60 // fallback
-	}
+func GenerateJWT(userID uint, email string, cfg JWTConfig) (string, error) {
+	expirationTime := time.Now().Add(time.Duration(cfg.GetJWTExpirationMinutes()) * time.Minute)
 	claims := CustomClaims{
-		UserID: userID,
+		UserID: int(userID),
 		Email:  email,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expMin) * time.Minute)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -70,14 +67,13 @@ func ValidateJWT(tokenString string, cfg JWTConfig) (*CustomClaims, error) {
 
 // GenerateRefreshToken genera un refresh token para un usuario dado
 // Expira en 7 días por defecto
-func GenerateRefreshToken(userID int, cfg JWTConfig) (string, error) {
-	days := 7
+func GenerateRefreshToken(userID uint, cfg JWTConfig) (string, error) {
+	expirationTime := time.Now().Add(time.Duration(cfg.GetRefreshExpirationHours()) * time.Hour)
 	claims := RefreshClaims{
-		UserID: userID,
+		UserID: int(userID),
 		Type:   "refresh",
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * time.Duration(days))),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

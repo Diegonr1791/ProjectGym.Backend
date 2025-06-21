@@ -20,7 +20,6 @@ func NewUsuarioHandler(r gin.IRouter, usecase *usuario.UsuarioUsecase) {
 	r.GET("/usuarios/:id", handler.Obtener)
 	r.GET("/usuarios/email/:email", handler.ObtenerUsuarioPorEmail)
 	r.POST("/usuarios", handler.Registrar)
-	r.POST("/login", handler.Login)
 	r.PUT("/usuarios/:id", handler.Actualizar)
 	r.DELETE("/usuarios/:id", handler.Eliminar)
 }
@@ -48,36 +47,6 @@ func (h *UsuarioHandler) Registrar(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, u)
-}
-
-// @Summary Iniciar sesión
-// @Description Autentica un usuario con email y contraseña
-// @Tags usuarios
-// @Accept json
-// @Produce json
-// @Param credentials body object true "Credenciales de login" schema="{email: string, password: string}"
-// @Success 200 {object} model.Usuario
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 401 {object} map[string]interface{} "Credenciales inválidas"
-// @Router /login [post]
-func (h *UsuarioHandler) Login(c *gin.Context) {
-	var cred struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	if err := c.ShouldBindJSON(&cred); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	user, err := h.usecase.Login(cred.Email, cred.Password)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciales inválidas"})
-		return
-	}
-
-	c.JSON(http.StatusOK, user)
 }
 
 // @Summary Obtener todos los usuarios

@@ -1,4 +1,4 @@
-basePath: /
+basePath: /api/v1
 definitions:
   http.LoginRequest:
     properties:
@@ -14,8 +14,6 @@ definitions:
     properties:
       access_token:
         type: string
-      refresh_token:
-        type: string
       user:
         properties:
           email:
@@ -23,20 +21,6 @@ definitions:
           id:
             type: integer
         type: object
-    type: object
-  http.RefreshRequest:
-    properties:
-      refresh_token:
-        type: string
-    required:
-    - refresh_token
-    type: object
-  http.RefreshResponse:
-    properties:
-      access_token:
-        type: string
-      refresh_token:
-        type: string
     type: object
   model.Ejercicio:
     properties:
@@ -155,8 +139,6 @@ definitions:
         type: integer
       nombre:
         type: string
-      password:
-        type: string
     type: object
 host: localhost:8080
 info:
@@ -176,7 +158,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Autentica un usuario y genera access token y refresh token
+      description: Autentica un usuario, genera un access token y un refresh token
+        en una cookie segura.
       parameters:
       - description: Credenciales de login
         in: body
@@ -201,21 +184,17 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "500":
+          description: Error interno del servidor
+          schema:
+            additionalProperties: true
+            type: object
       summary: Iniciar sesión
       tags:
       - autenticación
   /auth/logout:
     post:
-      consumes:
-      - application/json
-      description: Invalida el refresh token (en producción, agregar a blacklist)
-      parameters:
-      - description: Refresh token a invalidar
-        in: body
-        name: refresh
-        required: true
-        schema:
-          $ref: '#/definitions/http.RefreshRequest'
+      description: Invalida el refresh token del usuario.
       produces:
       - application/json
       responses:
@@ -225,7 +204,7 @@ paths:
             additionalProperties: true
             type: object
         "400":
-          description: Datos inválidos
+          description: No hay sesión activa para cerrar
           schema:
             additionalProperties: true
             type: object
@@ -234,25 +213,17 @@ paths:
       - autenticación
   /auth/refresh:
     post:
-      consumes:
-      - application/json
-      description: Renueva el access token usando un refresh token válido
-      parameters:
-      - description: Refresh token
-        in: body
-        name: refresh
-        required: true
-        schema:
-          $ref: '#/definitions/http.RefreshRequest'
+      description: Renueva el access token usando un refresh token válido desde una
+        cookie.
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Nuevo access token
           schema:
-            $ref: '#/definitions/http.RefreshResponse'
+            $ref: '#/definitions/http.LoginResponse'
         "400":
-          description: Datos inválidos
+          description: Cookie no encontrada
           schema:
             additionalProperties: true
             type: object
@@ -783,38 +754,6 @@ paths:
       summary: Actualizar grupo muscular
       tags:
       - grupos-musculares
-  /login:
-    post:
-      consumes:
-      - application/json
-      description: Autentica un usuario con email y contraseña
-      parameters:
-      - description: Credenciales de login
-        in: body
-        name: credentials
-        required: true
-        schema:
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.Usuario'
-        "400":
-          description: Datos inválidos
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Credenciales inválidas
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Iniciar sesión
-      tags:
-      - usuarios
   /medicion:
     get:
       consumes:

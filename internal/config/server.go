@@ -3,6 +3,7 @@ package config
 import (
 	http "github.com/Diegonr1791/GymBro/interfaces/http"
 	"github.com/Diegonr1791/GymBro/internal/auth"
+	"github.com/Diegonr1791/GymBro/internal/usecase"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -36,11 +37,17 @@ func (s *Server) setupRoutes() {
 	// Configurar Swagger
 	s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// Rutas públicas (sin autenticación)
-	http.NewAuthHandler(s.router, s.container.UsuarioService, s.config)
+	// Grupo principal para la API versionada
+	apiV1 := s.router.Group("/api/v1")
 
-	// Grupo de rutas protegidas con JWT
-	protected := s.router.Group("/")
+	// Inicializar el use case de refresh token aquí, donde tenemos la config
+	refreshTokenUsecase := usecase.NewRefreshTokenUsecase(s.container.RefreshTokenRepo, s.container.UsuarioRepo, s.config)
+
+	// Rutas públicas (sin autenticación) - ahora cuelgan de /api/v1
+	http.NewAuthHandler(apiV1, s.container.UsuarioService, refreshTokenUsecase, s.config)
+
+	// Grupo de rutas protegidas con JWT - ahora cuelgan de /api/v1
+	protected := apiV1.Group("/")
 	protected.Use(auth.JWTAuthMiddleware(s.config))
 
 	// Configurar handlers protegidos

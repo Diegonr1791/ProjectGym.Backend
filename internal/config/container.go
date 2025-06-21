@@ -22,6 +22,7 @@ type Container struct {
 	EjercicioRepo       repository.ExerciseRepository
 	SesionRepo          repository.SessionRepository
 	SesionEjercicioRepo repository.SessionExerciseRepository
+	RefreshTokenRepo    repository.RefreshTokenRepository
 
 	// Use Cases
 	UsuarioService         *usecase.UsuarioUsecase
@@ -66,6 +67,7 @@ func (c *Container) initializeRepositories() {
 	c.EjercicioRepo = persistence.NewExerciseGormRepository(c.DB)
 	c.SesionRepo = persistence.NewSessionGormRepository(c.DB)
 	c.SesionEjercicioRepo = persistence.NewSessionExerciseGormRepository(c.DB)
+	c.RefreshTokenRepo = persistence.NewRefreshTokenGormRepository(c.DB)
 }
 
 // initializeUseCases configura todos los use cases

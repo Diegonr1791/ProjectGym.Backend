@@ -4,53 +4,44 @@ import (
 	"net/http"
 
 	"github.com/Diegonr1791/GymBro/internal/auth"
-	usuario "github.com/Diegonr1791/GymBro/internal/usecase"
+	"github.com/Diegonr1791/GymBro/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {
-	usecase *usuario.UsuarioUsecase
-	config  auth.JWTConfig
+	userUsecase *usecase.UsuarioUsecase
+	rtUsecase   *usecase.RefreshTokenUsecase
+	config      auth.JWTConfig
 }
 
-func NewAuthHandler(r *gin.Engine, usecase *usuario.UsuarioUsecase, cfg auth.JWTConfig) {
-	handler := &AuthHandler{usecase, cfg}
+func NewAuthHandler(r gin.IRouter, userUsecase *usecase.UsuarioUsecase, rtUsecase *usecase.RefreshTokenUsecase, cfg auth.JWTConfig) {
+	handler := &AuthHandler{
+		userUsecase: userUsecase,
+		rtUsecase:   rtUsecase,
+		config:      cfg,
+	}
 
-	// Rutas públicas (sin autenticación)
-	r.POST("/auth/login", handler.Login)
-	r.POST("/auth/refresh", handler.RefreshToken)
-	r.POST("/auth/logout", handler.Logout)
+	authRoutes := r.Group("/auth")
+	authRoutes.POST("/login", handler.Login)
+	authRoutes.POST("/refresh", handler.RefreshToken)
+	authRoutes.POST("/logout", handler.Logout)
 }
 
-// LoginRequest representa la solicitud de login
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
-// LoginResponse representa la respuesta de login
 type LoginResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	User         struct {
-		ID    int    `json:"id"`
+	AccessToken string `json:"access_token"`
+	User        struct {
+		ID    uint   `json:"id"`
 		Email string `json:"email"`
 	} `json:"user"`
 }
 
-// RefreshRequest representa la solicitud de refresh
-type RefreshRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
-}
-
-// RefreshResponse representa la respuesta de refresh
-type RefreshResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
 // @Summary Iniciar sesión
-// @Description Autentica un usuario y genera access token y refresh token
+// @Description Autentica un usuario, genera un access token y un refresh token en una cookie segura.
 // @Tags autenticación
 // @Accept json
 // @Produce json
@@ -58,6 +49,7 @@ type RefreshResponse struct {
 // @Success 200 {object} LoginResponse
 // @Failure 400 {object} map[string]interface{} "Datos inválidos"
 // @Failure 401 {object} map[string]interface{} "Credenciales inválidas"
+// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
 // @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
@@ -66,116 +58,72 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Autenticar usuario
-	user, err := h.usecase.Login(req.Email, req.Password)
+	user, err := h.userUsecase.Login(req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciales inválidas"})
 		return
 	}
 
-	// Generar access token
 	accessToken, err := auth.GenerateJWT(user.ID, user.Email, h.config)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al generar token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al generar token de acceso"})
 		return
 	}
 
-	// Generar refresh token
-	refreshToken, err := auth.GenerateRefreshToken(user.ID, h.config)
+	refreshTokenString, err := h.rtUsecase.CreateAndStore(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al generar refresh token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al procesar refresh token: " + err.Error()})
 		return
 	}
 
-	// Construir respuesta
-	response := LoginResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}
+	c.SetCookie("refresh_token", refreshTokenString, h.config.GetRefreshMaxAge(), "/api/v1/auth", "localhost", true, true)
+
+	response := LoginResponse{AccessToken: accessToken}
 	response.User.ID = user.ID
 	response.User.Email = user.Email
-
 	c.JSON(http.StatusOK, response)
 }
 
 // @Summary Refrescar token
-// @Description Renueva el access token usando un refresh token válido
+// @Description Renueva el access token usando un refresh token válido desde una cookie.
 // @Tags autenticación
-// @Accept json
 // @Produce json
-// @Param refresh body RefreshRequest true "Refresh token"
-// @Success 200 {object} RefreshResponse
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
+// @Success 200 {object} LoginResponse "Nuevo access token"
+// @Failure 400 {object} map[string]interface{} "Cookie no encontrada"
 // @Failure 401 {object} map[string]interface{} "Refresh token inválido"
 // @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	var req RefreshRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
-		return
-	}
-
-	// Validar refresh token
-	claims, err := auth.ValidateRefreshToken(req.RefreshToken, h.config)
+	refreshTokenString, err := c.Cookie("refresh_token")
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token inválido: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Refresh token cookie no encontrada"})
 		return
 	}
 
-	// Obtener usuario para generar nuevos tokens
-	user, err := h.usecase.ObtenerUsuario(uint(claims.UserID))
+	newAccessToken, err := h.rtUsecase.ValidateAndRefresh(refreshTokenString)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuario no encontrado"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Generar nuevo access token
-	accessToken, err := auth.GenerateJWT(user.ID, user.Email, h.config)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al generar token"})
-		return
-	}
-
-	// Generar nuevo refresh token
-	refreshToken, err := auth.GenerateRefreshToken(user.ID, h.config)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al generar refresh token"})
-		return
-	}
-
-	response := RefreshResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}
-
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, gin.H{"access_token": newAccessToken})
 }
 
 // @Summary Cerrar sesión
-// @Description Invalida el refresh token (en producción, agregar a blacklist)
+// @Description Invalida el refresh token del usuario.
 // @Tags autenticación
-// @Accept json
 // @Produce json
-// @Param refresh body RefreshRequest true "Refresh token a invalidar"
 // @Success 200 {object} map[string]interface{} "Sesión cerrada exitosamente"
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
+// @Failure 400 {object} map[string]interface{} "No hay sesión activa para cerrar"
 // @Router /auth/logout [post]
 func (h *AuthHandler) Logout(c *gin.Context) {
-	var req RefreshRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
-		return
-	}
-
-	// En producción, aquí agregarías el refresh token a una blacklist
-	// o lo invalidarías en la base de datos/Redis
-	// Por ahora, solo validamos que sea un token válido
-
-	_, err := auth.ValidateRefreshToken(req.RefreshToken, h.config)
+	refreshTokenString, err := c.Cookie("refresh_token")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Refresh token inválido"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No hay sesión activa para cerrar"})
 		return
 	}
 
+	_ = h.rtUsecase.Revoke(refreshTokenString)
+
+	c.SetCookie("refresh_token", "", -1, "/api/v1/auth", "localhost", true, true)
 	c.JSON(http.StatusOK, gin.H{"message": "Sesión cerrada exitosamente"})
 }
