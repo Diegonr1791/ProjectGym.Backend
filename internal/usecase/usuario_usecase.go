@@ -16,7 +16,7 @@ func NewUsuarioUsecase(repo repositories.UsuarioRepository) *UsuarioUsecase {
 	return &UsuarioUsecase{repo}
 }
 
-func (uc *UsuarioUsecase) CreateUsuario(u *models.Usuario) error {
+func (uc *UsuarioUsecase) CreateUsuario(u *models.User) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return domainErrors.NewAppError(500, "HASH_PASSWORD_FAILED", "Failed to hash password", err)
@@ -33,7 +33,7 @@ func (uc *UsuarioUsecase) CreateUsuario(u *models.Usuario) error {
 	return nil
 }
 
-func (uc *UsuarioUsecase) GetUsuarioByID(id uint) (*models.Usuario, error) {
+func (uc *UsuarioUsecase) GetUsuarioByID(id uint) (*models.User, error) {
 	user, err := uc.repo.GetByID(id)
 	if err != nil {
 		if errors.Is(err, domainErrors.ErrNotFound) {
@@ -44,7 +44,7 @@ func (uc *UsuarioUsecase) GetUsuarioByID(id uint) (*models.Usuario, error) {
 	return user, nil
 }
 
-func (uc *UsuarioUsecase) GetUsuarioByEmail(email string) (*models.Usuario, error) {
+func (uc *UsuarioUsecase) GetUsuarioByEmail(email string) (*models.User, error) {
 	user, err := uc.repo.GetByEmail(email)
 	if err != nil {
 		if errors.Is(err, domainErrors.ErrNotFound) {
@@ -55,7 +55,7 @@ func (uc *UsuarioUsecase) GetUsuarioByEmail(email string) (*models.Usuario, erro
 	return user, nil
 }
 
-func (uc *UsuarioUsecase) GetAllUsuarios() ([]models.Usuario, error) {
+func (uc *UsuarioUsecase) GetAllUsuarios() ([]models.User, error) {
 	users, err := uc.repo.GetAll()
 	if err != nil {
 		return nil, domainErrors.NewAppError(500, "DB_GET_ALL_USERS_FAILED", "Failed to get all users from database", err)
@@ -63,7 +63,7 @@ func (uc *UsuarioUsecase) GetAllUsuarios() ([]models.Usuario, error) {
 	return users, nil
 }
 
-func (uc *UsuarioUsecase) UpdateUsuario(u *models.Usuario) error {
+func (uc *UsuarioUsecase) UpdateUsuario(u *models.User) error {
 	if _, err := uc.repo.GetByID(u.ID); err != nil {
 		if errors.Is(err, domainErrors.ErrNotFound) {
 			return domainErrors.ErrNotFound
@@ -96,7 +96,7 @@ func (uc *UsuarioUsecase) DeleteUsuario(id uint) error {
 	return nil
 }
 
-func (uc *UsuarioUsecase) Login(email, password string) (*models.Usuario, error) {
+func (uc *UsuarioUsecase) Login(email, password string) (*models.User, error) {
 	usuario, err := uc.repo.GetByEmail(email)
 	if err != nil {
 		if errors.Is(err, domainErrors.ErrNotFound) {

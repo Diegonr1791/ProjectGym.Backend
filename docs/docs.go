@@ -26,7 +26,7 @@ const docTemplate = `{
     "paths": {
         "/auth/login": {
             "post": {
-                "description": "Autentica un usuario, genera un access token y un refresh token en una cookie segura.",
+                "description": "Authenticates a user, generates an access token and a refresh token in a secure cookie.",
                 "consumes": [
                     "application/json"
                 ],
@@ -34,12 +34,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "autenticación"
+                    "authentication"
                 ],
-                "summary": "Iniciar sesión",
+                "summary": "Login",
                 "parameters": [
                     {
-                        "description": "Credenciales de login",
+                        "description": "Login credentials",
                         "name": "credentials",
                         "in": "body",
                         "required": true,
@@ -56,24 +56,21 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Invalid data",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Credenciales inválidas",
+                        "description": "Invalid credentials",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -81,27 +78,28 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
-                "description": "Invalida el refresh token del usuario.",
+                "description": "Invalidates the user's refresh token.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "autenticación"
+                    "authentication"
                 ],
-                "summary": "Cerrar sesión",
+                "summary": "Logout",
                 "responses": {
                     "200": {
-                        "description": "Sesión cerrada exitosamente",
+                        "description": "Session closed successfully",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
-                        "description": "No hay sesión activa para cerrar",
+                        "description": "No active session to close",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -109,46 +107,47 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Renueva el access token usando un refresh token válido desde una cookie.",
+                "description": "Renews the access token using a valid refresh token from a cookie.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "autenticación"
+                    "authentication"
                 ],
-                "summary": "Refrescar token",
+                "summary": "Refresh token",
                 "responses": {
                     "200": {
-                        "description": "Nuevo access token",
+                        "description": "New access token",
                         "schema": {
-                            "$ref": "#/definitions/http.LoginResponse"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
-                        "description": "Cookie no encontrada",
+                        "description": "Cookie not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Refresh token inválido",
+                        "description": "Invalid refresh token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/ejercicio": {
+        "/exercise-types": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene la lista completa de ejercicios",
+                "description": "Get a complete list of exercise types",
                 "consumes": [
                     "application/json"
                 ],
@@ -156,24 +155,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ejercicios"
+                    "exercise-types"
                 ],
-                "summary": "Obtener todos los ejercicios",
+                "summary": "Get all exercise types",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Ejercicio"
+                                "$ref": "#/definitions/models.TipoEjercicio"
                             }
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -184,7 +182,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Crea un nuevo ejercicio en el sistema",
+                "description": "Create a new exercise type in the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -192,17 +190,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ejercicios"
+                    "exercise-types"
                 ],
-                "summary": "Crear nuevo ejercicio",
+                "summary": "Create a new exercise type",
                 "parameters": [
                     {
-                        "description": "Datos del ejercicio",
-                        "name": "ejercicio",
+                        "description": "Exercise type data",
+                        "name": "exercise-type",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Ejercicio"
+                            "$ref": "#/definitions/models.TipoEjercicio"
                         }
                     }
                 ],
@@ -210,34 +208,32 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.Ejercicio"
+                            "$ref": "#/definitions/models.TipoEjercicio"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/ejercicio/grupo-muscular/{id}": {
+        "/exercise-types/{id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene todos los ejercicios de un grupo muscular específico",
+                "description": "Get a specific exercise type by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -245,13 +241,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ejercicios"
+                    "exercise-types"
                 ],
-                "summary": "Obtener ejercicios por grupo muscular",
+                "summary": "Get exercise type by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del grupo muscular",
+                        "description": "Exercise Type ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -261,75 +257,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Ejercicio"
-                            }
+                            "$ref": "#/definitions/models.TipoEjercicio"
                         }
                     },
                     "400": {
-                        "description": "ID inválido",
+                        "description": "Invalid ID format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/ejercicio/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Obtiene un ejercicio específico por su ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ejercicios"
-                ],
-                "summary": "Obtener ejercicio por ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID del ejercicio",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.Ejercicio"
-                        }
-                    },
-                    "400": {
-                        "description": "ID inválido",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Ejercicio no encontrado",
+                        "description": "Exercise type not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -340,7 +280,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Actualiza un ejercicio existente",
+                "description": "Update an existing exercise type",
                 "consumes": [
                     "application/json"
                 ],
@@ -348,24 +288,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ejercicios"
+                    "exercise-types"
                 ],
-                "summary": "Actualizar ejercicio",
+                "summary": "Update exercise type",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del ejercicio",
+                        "description": "Exercise Type ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Datos actualizados del ejercicio",
-                        "name": "ejercicio",
+                        "description": "Updated exercise type data",
+                        "name": "exercise-type",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Ejercicio"
+                            "$ref": "#/definitions/models.TipoEjercicio"
                         }
                     }
                 ],
@@ -373,21 +313,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Ejercicio"
+                            "$ref": "#/definitions/models.TipoEjercicio"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -398,7 +342,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Elimina un ejercicio del sistema",
+                "description": "Delete an exercise type from the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -406,13 +350,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ejercicios"
+                    "exercise-types"
                 ],
-                "summary": "Eliminar ejercicio",
+                "summary": "Delete exercise type",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del ejercicio",
+                        "description": "Exercise Type ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -420,33 +364,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "Ejercicio eliminado"
+                        "description": "No Content"
                     },
                     "400": {
-                        "description": "ID inválido",
+                        "description": "Invalid ID format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/favorita": {
+        "/exercises": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene la lista completa de favoritas",
+                "description": "Get a complete list of exercises",
                 "consumes": [
                     "application/json"
                 ],
@@ -454,24 +396,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "favoritas"
+                    "exercises"
                 ],
-                "summary": "Obtener todas las favoritas",
+                "summary": "Get all exercises",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Favorita"
+                                "$ref": "#/definitions/models.Ejercicio"
                             }
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -482,7 +423,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Crea una nueva favorita en el sistema",
+                "description": "Create a new exercise in the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -490,17 +431,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "favoritas"
+                    "exercises"
                 ],
-                "summary": "Crear nueva favorita",
+                "summary": "Create a new exercise",
                 "parameters": [
                     {
-                        "description": "Datos de la favorita",
-                        "name": "favorita",
+                        "description": "Exercise data",
+                        "name": "exercise",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Favorita"
+                            "$ref": "#/definitions/models.Ejercicio"
                         }
                     }
                 ],
@@ -508,34 +449,32 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.Favorita"
+                            "$ref": "#/definitions/models.Ejercicio"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/favorita/usuario/{usuario_id}": {
+        "/exercises/muscle-group/{id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene todas las favoritas de un usuario específico",
+                "description": "Get all exercises of a specific muscle group",
                 "consumes": [
                     "application/json"
                 ],
@@ -543,14 +482,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "favoritas"
+                    "exercises"
                 ],
-                "summary": "Obtener favoritas por usuario",
+                "summary": "Get exercises by muscle group",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del usuario",
-                        "name": "usuario_id",
+                        "description": "Muscle Group ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
@@ -561,28 +500,33 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Favorita"
+                                "$ref": "#/definitions/models.Ejercicio"
                             }
                         }
                     },
-                    "500": {
-                        "description": "Error interno del servidor",
+                    "400": {
+                        "description": "Invalid ID format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/favorita/{id}": {
+        "/exercises/{id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene una favorita específica por su ID",
+                "description": "Get a specific exercise by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -590,13 +534,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "favoritas"
+                    "exercises"
                 ],
-                "summary": "Obtener favorita por ID",
+                "summary": "Get exercise by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la favorita",
+                        "description": "Exercise ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -606,14 +550,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Favorita"
+                            "$ref": "#/definitions/models.Ejercicio"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Favorita no encontrada",
+                        "description": "Exercise not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -624,7 +573,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Actualiza una favorita existente",
+                "description": "Update an existing exercise",
                 "consumes": [
                     "application/json"
                 ],
@@ -632,24 +581,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "favoritas"
+                    "exercises"
                 ],
-                "summary": "Actualizar favorita",
+                "summary": "Update exercise",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la favorita",
+                        "description": "Exercise ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Datos actualizados de la favorita",
-                        "name": "favorita",
+                        "description": "Updated exercise data",
+                        "name": "exercise",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Favorita"
+                            "$ref": "#/definitions/models.Ejercicio"
                         }
                     }
                 ],
@@ -657,21 +606,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Favorita"
+                            "$ref": "#/definitions/models.Ejercicio"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -682,7 +635,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Elimina una favorita del sistema",
+                "description": "Delete an exercise from the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -690,13 +643,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "favoritas"
+                    "exercises"
                 ],
-                "summary": "Eliminar favorita",
+                "summary": "Delete exercise",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la favorita",
+                        "description": "Exercise ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -704,26 +657,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "Favorita eliminada"
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/grupo-muscular": {
+        "/favorites": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene la lista completa de grupos musculares",
+                "description": "Get a complete list of favorites",
                 "consumes": [
                     "application/json"
                 ],
@@ -731,24 +689,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "grupos-musculares"
+                    "favorites"
                 ],
-                "summary": "Obtener todos los grupos musculares",
+                "summary": "Get all favorites",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.GrupoMuscular"
+                                "$ref": "#/definitions/models.Favorita"
                             }
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -759,7 +716,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Crea un nuevo grupo muscular en el sistema",
+                "description": "Create a new favorite in the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -767,17 +724,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "grupos-musculares"
+                    "favorites"
                 ],
-                "summary": "Crear nuevo grupo muscular",
+                "summary": "Create a new favorite",
                 "parameters": [
                     {
-                        "description": "Datos del grupo muscular",
-                        "name": "grupo",
+                        "description": "Favorite data",
+                        "name": "favorite",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.GrupoMuscular"
+                            "$ref": "#/definitions/models.Favorita"
                         }
                     }
                 ],
@@ -785,34 +742,32 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.GrupoMuscular"
+                            "$ref": "#/definitions/models.Favorita"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/grupo-muscular/{id}": {
+        "/favorites/user/{user_id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene un grupo muscular específico por su ID",
+                "description": "Get all favorites of a specific user",
                 "consumes": [
                     "application/json"
                 ],
@@ -820,13 +775,65 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "grupos-musculares"
+                    "favorites"
                 ],
-                "summary": "Obtener grupo muscular por ID",
+                "summary": "Get favorites by user",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del grupo muscular",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Favorita"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/favorites/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a specific favorite by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "favorites"
+                ],
+                "summary": "Get favorite by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Favorite ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -836,14 +843,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.GrupoMuscular"
+                            "$ref": "#/definitions/models.Favorita"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Grupo muscular no encontrado",
+                        "description": "Favorite not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -854,7 +866,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Actualiza un grupo muscular existente",
+                "description": "Update an existing favorite",
                 "consumes": [
                     "application/json"
                 ],
@@ -862,24 +874,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "grupos-musculares"
+                    "favorites"
                 ],
-                "summary": "Actualizar grupo muscular",
+                "summary": "Update favorite",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del grupo muscular",
+                        "description": "Favorite ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Datos actualizados del grupo muscular",
-                        "name": "grupo",
+                        "description": "Updated favorite data",
+                        "name": "favorite",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.GrupoMuscular"
+                            "$ref": "#/definitions/models.Favorita"
                         }
                     }
                 ],
@@ -887,21 +899,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.GrupoMuscular"
+                            "$ref": "#/definitions/models.Favorita"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -912,7 +928,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Elimina un grupo muscular del sistema",
+                "description": "Delete a favorite from the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -920,13 +936,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "grupos-musculares"
+                    "favorites"
                 ],
-                "summary": "Eliminar grupo muscular",
+                "summary": "Delete favorite",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del grupo muscular",
+                        "description": "Favorite ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -934,26 +950,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "Grupo muscular eliminado"
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/medicion": {
+        "/measurements": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene la lista completa de mediciones",
+                "description": "Get a complete list of measurements",
                 "consumes": [
                     "application/json"
                 ],
@@ -961,24 +982,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "mediciones"
+                    "measurements"
                 ],
-                "summary": "Obtener todas las mediciones",
+                "summary": "Get all measurements",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Medicion"
+                                "$ref": "#/definitions/models.Medicion"
                             }
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -989,7 +1009,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Crea una nueva medición en el sistema",
+                "description": "Create a new measurement in the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -997,17 +1017,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "mediciones"
+                    "measurements"
                 ],
-                "summary": "Crear nueva medición",
+                "summary": "Create a new measurement",
                 "parameters": [
                     {
-                        "description": "Datos de la medición",
-                        "name": "medicion",
+                        "description": "Measurement data",
+                        "name": "measurement",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Medicion"
+                            "$ref": "#/definitions/models.Medicion"
                         }
                     }
                 ],
@@ -1015,29 +1035,32 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.Medicion"
+                            "$ref": "#/definitions/models.Medicion"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/medicion/usuario/{usuario_id}": {
+        "/measurements/user/{user_id}": {
             "get": {
-                "description": "Obtiene todas las mediciones de un usuario específico",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all measurements of a specific user",
                 "consumes": [
                     "application/json"
                 ],
@@ -1045,14 +1068,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "mediciones"
+                    "measurements"
                 ],
-                "summary": "Obtener mediciones por usuario",
+                "summary": "Get measurements by user",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del usuario",
-                        "name": "usuario_id",
+                        "description": "User ID",
+                        "name": "user_id",
                         "in": "path",
                         "required": true
                     }
@@ -1063,28 +1086,33 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Medicion"
+                                "$ref": "#/definitions/models.Medicion"
                             }
                         }
                     },
-                    "500": {
-                        "description": "Error interno del servidor",
+                    "400": {
+                        "description": "Invalid user ID format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/medicion/{id}": {
+        "/measurements/{id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene una medición específica por su ID",
+                "description": "Get a specific measurement by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -1092,13 +1120,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "mediciones"
+                    "measurements"
                 ],
-                "summary": "Obtener medición por ID",
+                "summary": "Get measurement by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la medición",
+                        "description": "Measurement ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1108,14 +1136,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Medicion"
+                            "$ref": "#/definitions/models.Medicion"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Medición no encontrada",
+                        "description": "Measurement not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -1126,7 +1159,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Actualiza una medición existente",
+                "description": "Update an existing measurement",
                 "consumes": [
                     "application/json"
                 ],
@@ -1134,24 +1167,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "mediciones"
+                    "measurements"
                 ],
-                "summary": "Actualizar medición",
+                "summary": "Update measurement",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la medición",
+                        "description": "Measurement ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Datos actualizados de la medición",
-                        "name": "medicion",
+                        "description": "Updated measurement data",
+                        "name": "measurement",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Medicion"
+                            "$ref": "#/definitions/models.Medicion"
                         }
                     }
                 ],
@@ -1159,21 +1192,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Medicion"
+                            "$ref": "#/definitions/models.Medicion"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -1184,7 +1221,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Elimina una medición del sistema",
+                "description": "Delete a measurement from the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -1192,13 +1229,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "mediciones"
+                    "measurements"
                 ],
-                "summary": "Eliminar medición",
+                "summary": "Delete measurement",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la medición",
+                        "description": "Measurement ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1206,26 +1243,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "Medición eliminada"
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/rutina-gm": {
+        "/muscle-groups": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene la lista completa de rutinas de grupo muscular",
+                "description": "Get a complete list of muscle groups",
                 "consumes": [
                     "application/json"
                 ],
@@ -1233,24 +1275,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "rutinas-grupo-muscular"
+                    "muscle-groups"
                 ],
-                "summary": "Obtener todas las rutinas de grupo muscular",
+                "summary": "Get all muscle groups",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.RutinaGrupoMuscular"
+                                "$ref": "#/definitions/models.GrupoMuscular"
                             }
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -1261,7 +1302,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Crea una nueva rutina de grupo muscular en el sistema",
+                "description": "Create a new muscle group in the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -1269,17 +1310,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "rutinas-grupo-muscular"
+                    "muscle-groups"
                 ],
-                "summary": "Crear nueva rutina de grupo muscular",
+                "summary": "Create a new muscle group",
                 "parameters": [
                     {
-                        "description": "Datos de la rutina de grupo muscular",
-                        "name": "rutina",
+                        "description": "Muscle group data",
+                        "name": "muscle-group",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.RutinaGrupoMuscular"
+                            "$ref": "#/definitions/models.GrupoMuscular"
                         }
                     }
                 ],
@@ -1287,34 +1328,32 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.RutinaGrupoMuscular"
+                            "$ref": "#/definitions/models.GrupoMuscular"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/rutina-gm/{id}": {
+        "/muscle-groups/{id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene una rutina de grupo muscular específica por su ID",
+                "description": "Get a specific muscle group by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -1322,13 +1361,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "rutinas-grupo-muscular"
+                    "muscle-groups"
                 ],
-                "summary": "Obtener rutina de grupo muscular por ID",
+                "summary": "Get muscle group by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la rutina de grupo muscular",
+                        "description": "Muscle Group ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1338,14 +1377,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.RutinaGrupoMuscular"
+                            "$ref": "#/definitions/models.GrupoMuscular"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Rutina grupo muscular no encontrada",
+                        "description": "Muscle group not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -1356,7 +1400,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Actualiza una rutina de grupo muscular existente",
+                "description": "Update an existing muscle group",
                 "consumes": [
                     "application/json"
                 ],
@@ -1364,24 +1408,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "rutinas-grupo-muscular"
+                    "muscle-groups"
                 ],
-                "summary": "Actualizar rutina de grupo muscular",
+                "summary": "Update muscle group",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la rutina de grupo muscular",
+                        "description": "Muscle Group ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Datos actualizados de la rutina de grupo muscular",
-                        "name": "rutina",
+                        "description": "Updated muscle group data",
+                        "name": "muscle-group",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.RutinaGrupoMuscular"
+                            "$ref": "#/definitions/models.GrupoMuscular"
                         }
                     }
                 ],
@@ -1389,28 +1433,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.RutinaGrupoMuscular"
+                            "$ref": "#/definitions/models.GrupoMuscular"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Rutina grupo muscular no encontrada",
+                        "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -1421,7 +1462,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Elimina una rutina de grupo muscular del sistema",
+                "description": "Delete a muscle group from the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -1429,116 +1470,66 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "rutinas-grupo-muscular"
+                    "muscle-groups"
                 ],
-                "summary": "Eliminar rutina de grupo muscular",
+                "summary": "Delete muscle group",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la rutina de grupo muscular",
+                        "description": "Muscle Group ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Rutina grupo muscular eliminada correctamente",
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/rutina/grupo-muscular/{id}": {
+        "/roles": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene todos los grupos musculares asociados a una rutina específica",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Get all active roles in the system",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "rutinas-grupo-muscular"
+                    "roles"
                 ],
-                "summary": "Obtener grupos musculares por rutina",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de la rutina",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "Get all active roles",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.GrupoMuscular"
+                                "$ref": "#/definitions/models.Role"
                             }
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/rutinas": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Obtiene la lista completa de rutinas",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "rutinas"
-                ],
-                "summary": "Obtener todas las rutinas",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Rutina"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -1549,7 +1540,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Crea una nueva rutina en el sistema",
+                "description": "Create a new role in the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -1557,66 +1548,215 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "rutinas"
+                    "roles"
                 ],
-                "summary": "Crear nueva rutina",
+                "summary": "Create a new role",
                 "parameters": [
                     {
-                        "description": "Datos de la rutina",
-                        "name": "rutina",
+                        "description": "Role object",
+                        "name": "role",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Rutina"
+                            "$ref": "#/definitions/models.Role"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.Rutina"
+                            "$ref": "#/definitions/models.Role"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/rutinas/{id}": {
+        "/roles/active": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene una rutina específica por su ID",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Get all active roles in the system",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "rutinas"
+                    "roles"
                 ],
-                "summary": "Obtener rutina por ID",
+                "summary": "Get all active roles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Role"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles/all": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all roles in the system including deleted ones",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Get all roles including deleted ones",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Role"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles/name/{name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a role by its name",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Get a role by name",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Role"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles/system": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all system roles in the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Get all system roles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Role"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a role by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Get a role by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la rutina",
+                        "description": "Role ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1626,14 +1766,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Rutina"
+                            "$ref": "#/definitions/models.Role"
                         }
                     },
                     "404": {
-                        "description": "Rutina no encontrada",
+                        "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -1644,7 +1789,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Actualiza una rutina existente",
+                "description": "Update an existing role",
                 "consumes": [
                     "application/json"
                 ],
@@ -1652,24 +1797,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "rutinas"
+                    "roles"
                 ],
-                "summary": "Actualizar rutina",
+                "summary": "Update a role",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la rutina",
+                        "description": "Role ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Datos actualizados de la rutina",
-                        "name": "rutina",
+                        "description": "Role object",
+                        "name": "role",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Rutina"
+                            "$ref": "#/definitions/models.Role"
                         }
                     }
                 ],
@@ -1677,28 +1822,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Rutina"
+                            "$ref": "#/definitions/models.Role"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Rutina no encontrada",
+                        "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -1709,21 +1857,18 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Elimina una rutina del sistema",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Mark a role as deleted (soft delete)",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "rutinas"
+                    "roles"
                 ],
-                "summary": "Eliminar rutina",
+                "summary": "Soft delete a role",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la rutina",
+                        "description": "Role ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1731,231 +1876,789 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Rutina eliminada correctamente",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/sesion": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Obtiene la lista completa de sesiones de entrenamiento",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "sesiones"
-                ],
-                "summary": "Obtener todas las sesiones",
-                "responses": {
-                    "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Sesion"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Crea una nueva sesión de entrenamiento en el sistema",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "sesiones"
-                ],
-                "summary": "Crear nueva sesión",
-                "parameters": [
-                    {
-                        "description": "Datos de la sesión",
-                        "name": "sesion",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.Sesion"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/model.Sesion"
+                            "$ref": "#/definitions/http.MessageResponse"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/sesion-ejercicio": {
-            "get": {
+        "/roles/{id}/hard": {
+            "delete": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene la lista completa de ejercicios de sesión",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Permanently delete a role from the system",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "sesion-ejercicio"
+                    "roles"
                 ],
-                "summary": "Obtener todos los ejercicios de sesión",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.SesionEjercicio"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Crea un nuevo ejercicio de sesión en el sistema",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "sesion-ejercicio"
-                ],
-                "summary": "Crear nuevo ejercicio de sesión",
-                "parameters": [
-                    {
-                        "description": "Datos del ejercicio de sesión",
-                        "name": "sesion_ejercicio",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.SesionEjercicio"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/model.SesionEjercicio"
-                        }
-                    },
-                    "400": {
-                        "description": "Datos inválidos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/sesion-ejercicio/sesion/{id}": {
-            "get": {
-                "description": "Obtiene todos los ejercicios de una sesión específica",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "sesiones-ejercicios"
-                ],
-                "summary": "Obtener ejercicios de sesión por ID de sesión",
+                "summary": "Hard delete a role",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la sesión",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles/{id}/restore": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Restore a soft-deleted role",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Restore a deleted role",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/routine-muscle-groups": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a complete list of routine muscle groups",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "routine-muscle-groups"
+                ],
+                "summary": "Get all routine muscle groups",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RutinaGrupoMuscular"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new routine muscle group in the system",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "routine-muscle-groups"
+                ],
+                "summary": "Create a new routine muscle group",
+                "parameters": [
+                    {
+                        "description": "Routine muscle group data",
+                        "name": "routine_muscle_group",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RutinaGrupoMuscular"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.RutinaGrupoMuscular"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/routine-muscle-groups/routine/{id}/muscle-groups": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all muscle groups associated with a specific routine",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "routine-muscle-groups"
+                ],
+                "summary": "Get muscle groups by routine",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Routine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RutinaConGruposMusculares"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid routine ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/routine-muscle-groups/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a specific routine muscle group by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "routine-muscle-groups"
+                ],
+                "summary": "Get routine muscle group by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Routine muscle group ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RutinaGrupoMuscular"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Routine muscle group not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing routine muscle group",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "routine-muscle-groups"
+                ],
+                "summary": "Update routine muscle group",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Routine muscle group ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated routine muscle group data",
+                        "name": "routine_muscle_group",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RutinaGrupoMuscular"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RutinaGrupoMuscular"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a routine muscle group from the system",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "routine-muscle-groups"
+                ],
+                "summary": "Delete routine muscle group",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Routine muscle group ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/routines": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a complete list of routines",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "routines"
+                ],
+                "summary": "Get all routines",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Rutina"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new routine in the system",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "routines"
+                ],
+                "summary": "Create a new routine",
+                "parameters": [
+                    {
+                        "description": "Routine data",
+                        "name": "routine",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Rutina"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Rutina"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/routines/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a specific routine by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "routines"
+                ],
+                "summary": "Get routine by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Routine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Rutina"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Routine not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing routine",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "routines"
+                ],
+                "summary": "Update routine",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Routine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated routine data",
+                        "name": "routine",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Rutina"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Rutina"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a routine from the system",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "routines"
+                ],
+                "summary": "Delete routine",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Routine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/session-exercises": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a complete list of session exercises",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "session-exercises"
+                ],
+                "summary": "Get all session exercises",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.SesionEjercicio"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new session exercise in the system",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "session-exercises"
+                ],
+                "summary": "Create a new session exercise",
+                "parameters": [
+                    {
+                        "description": "Session exercise data",
+                        "name": "session_exercise",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SesionEjercicio"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.SesionEjercicio"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/session-exercises/session/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all exercises of a specific session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "session-exercises"
+                ],
+                "summary": "Get session exercises by session ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Fecha desde (formato: 2006-01-02)",
-                        "name": "fechaDesde",
+                        "description": "Start date (format: 2006-01-02)",
+                        "name": "start_date",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Fecha hasta (formato: 2006-01-02)",
-                        "name": "fechaHasta",
+                        "description": "End date (format: 2006-01-02)",
+                        "name": "end_date",
                         "in": "query"
                     }
                 ],
@@ -1965,28 +2668,33 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.SesionEjercicio"
+                                "$ref": "#/definitions/models.SesionEjercicio"
                             }
                         }
                     },
-                    "500": {
-                        "description": "Error interno del servidor",
+                    "400": {
+                        "description": "Invalid ID format or date format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/sesion-ejercicio/{id}": {
+        "/session-exercises/{id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene un ejercicio de sesión específico por su ID",
+                "description": "Get a specific session exercise by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -1994,13 +2702,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesion-ejercicio"
+                    "session-exercises"
                 ],
-                "summary": "Obtener ejercicio de sesión por ID",
+                "summary": "Get session exercise by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del ejercicio de sesión",
+                        "description": "Session exercise ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -2010,14 +2718,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SesionEjercicio"
+                            "$ref": "#/definitions/models.SesionEjercicio"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Ejercicio de sesión no encontrado",
+                        "description": "Session exercise not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -2028,7 +2741,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Actualiza un ejercicio de sesión existente",
+                "description": "Update an existing session exercise",
                 "consumes": [
                     "application/json"
                 ],
@@ -2036,24 +2749,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesion-ejercicio"
+                    "session-exercises"
                 ],
-                "summary": "Actualizar ejercicio de sesión",
+                "summary": "Update session exercise",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del ejercicio de sesión",
+                        "description": "Session exercise ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Datos actualizados del ejercicio de sesión",
-                        "name": "sesion_ejercicio",
+                        "description": "Updated session exercise data",
+                        "name": "session_exercise",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.SesionEjercicio"
+                            "$ref": "#/definitions/models.SesionEjercicio"
                         }
                     }
                 ],
@@ -2061,21 +2774,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SesionEjercicio"
+                            "$ref": "#/definitions/models.SesionEjercicio"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -2086,7 +2803,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Elimina un ejercicio de sesión del sistema",
+                "description": "Delete a session exercise from the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -2094,13 +2811,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesion-ejercicio"
+                    "session-exercises"
                 ],
-                "summary": "Eliminar ejercicio de sesión",
+                "summary": "Delete session exercise",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del ejercicio de sesión",
+                        "description": "Session exercise ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -2108,26 +2825,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "Ejercicio de sesión eliminado"
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/sesion/fecha": {
+        "/sessions": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene todas las sesiones dentro de un rango de fechas específico",
+                "description": "Get a complete list of training sessions",
                 "consumes": [
                     "application/json"
                 ],
@@ -2135,21 +2857,107 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesiones"
+                    "sessions"
                 ],
-                "summary": "Obtener sesiones por rango de fechas",
+                "summary": "Get all sessions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Sesion"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new training session in the system",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Create a new session",
+                "parameters": [
+                    {
+                        "description": "Session data",
+                        "name": "session",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Sesion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Sesion"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/sessions/date-range": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all sessions within a specific date range",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Get sessions by date range",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Fecha desde (formato ISO: 2024-01-02T15:04:05Z)",
-                        "name": "fechaDesde",
+                        "description": "Start date (ISO format: 2024-01-02T15:04:05Z)",
+                        "name": "start_date",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Fecha hasta (formato ISO: 2024-01-02T15:04:05Z)",
-                        "name": "fechaHasta",
+                        "description": "End date (ISO format: 2024-01-02T15:04:05Z)",
+                        "name": "end_date",
                         "in": "query",
                         "required": true
                     }
@@ -2160,35 +2968,33 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Sesion"
+                                "$ref": "#/definitions/models.Sesion"
                             }
                         }
                     },
                     "400": {
-                        "description": "Formato de fecha inválido",
+                        "description": "Invalid date format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/sesion/usuario/{id}": {
+        "/sessions/user/{id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene todas las sesiones de un usuario específico",
+                "description": "Get all sessions of a specific user",
                 "consumes": [
                     "application/json"
                 ],
@@ -2196,13 +3002,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesiones"
+                    "sessions"
                 ],
-                "summary": "Obtener sesiones por usuario",
+                "summary": "Get sessions by user",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del usuario",
+                        "description": "User ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -2214,28 +3020,33 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Sesion"
+                                "$ref": "#/definitions/models.Sesion"
                             }
                         }
                     },
-                    "500": {
-                        "description": "Error interno del servidor",
+                    "400": {
+                        "description": "Invalid ID format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/sesion/{id}": {
+        "/sessions/{id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene una sesión específica por su ID",
+                "description": "Get a specific session by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -2243,13 +3054,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesiones"
+                    "sessions"
                 ],
-                "summary": "Obtener sesión por ID",
+                "summary": "Get session by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la sesión",
+                        "description": "Session ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -2259,14 +3070,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Sesion"
+                            "$ref": "#/definitions/models.Sesion"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Sesión no encontrada",
+                        "description": "Session not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -2277,7 +3093,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Actualiza una sesión existente",
+                "description": "Update an existing session",
                 "consumes": [
                     "application/json"
                 ],
@@ -2285,24 +3101,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesiones"
+                    "sessions"
                 ],
-                "summary": "Actualizar sesión",
+                "summary": "Update session",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la sesión",
+                        "description": "Session ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Datos actualizados de la sesión",
-                        "name": "sesion",
+                        "description": "Updated session data",
+                        "name": "session",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Sesion"
+                            "$ref": "#/definitions/models.Sesion"
                         }
                     }
                 ],
@@ -2310,21 +3126,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Sesion"
+                            "$ref": "#/definitions/models.Sesion"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -2335,7 +3155,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Elimina una sesión del sistema",
+                "description": "Delete a session from the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -2343,13 +3163,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "sesiones"
+                    "sessions"
                 ],
-                "summary": "Eliminar sesión",
+                "summary": "Delete session",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la sesión",
+                        "description": "Session ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -2357,26 +3177,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "Sesión eliminada"
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/tipo-ejercicio": {
+        "/users": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene la lista completa de tipos de ejercicio",
+                "description": "Get a complete list of users",
                 "consumes": [
                     "application/json"
                 ],
@@ -2384,35 +3209,29 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tipos-ejercicio"
+                    "users"
                 ],
-                "summary": "Obtener todos los tipos de ejercicio",
+                "summary": "Get all users",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.TipoEjercicio"
+                                "$ref": "#/definitions/models.User"
                             }
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             },
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Crea un nuevo tipo de ejercicio en el sistema",
+                "description": "Register a new user in the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -2420,17 +3239,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tipos-ejercicio"
+                    "users"
                 ],
-                "summary": "Crear nuevo tipo de ejercicio",
+                "summary": "Create a new user",
                 "parameters": [
                     {
-                        "description": "Datos del tipo de ejercicio",
-                        "name": "tipo",
+                        "description": "User data",
+                        "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.TipoEjercicio"
+                            "$ref": "#/definitions/models.User"
                         }
                     }
                 ],
@@ -2438,34 +3257,38 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.TipoEjercicio"
+                            "$ref": "#/definitions/models.User"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/tipo-ejercicio/{id}": {
+        "/users/email/{email}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene un tipo de ejercicio específico por su ID",
+                "description": "Get a specific user by their email",
                 "consumes": [
                     "application/json"
                 ],
@@ -2473,245 +3296,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tipos-ejercicio"
+                    "users"
                 ],
-                "summary": "Obtener tipo de ejercicio por ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID del tipo de ejercicio",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.TipoEjercicio"
-                        }
-                    },
-                    "404": {
-                        "description": "Tipo de ejercicio no encontrado",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Actualiza un tipo de ejercicio existente",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tipos-ejercicio"
-                ],
-                "summary": "Actualizar tipo de ejercicio",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID del tipo de ejercicio",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Datos actualizados del tipo de ejercicio",
-                        "name": "tipo",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.TipoEjercicio"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.TipoEjercicio"
-                        }
-                    },
-                    "400": {
-                        "description": "Datos inválidos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Tipo de ejercicio no encontrado",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Elimina un tipo de ejercicio del sistema",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tipos-ejercicio"
-                ],
-                "summary": "Eliminar tipo de ejercicio",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID del tipo de ejercicio",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Tipo de ejercicio eliminado"
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/usuarios": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Obtiene la lista completa de usuarios",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "usuarios"
-                ],
-                "summary": "Obtener todos los usuarios",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Usuario"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Registra un nuevo usuario en el sistema",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "usuarios"
-                ],
-                "summary": "Registrar nuevo usuario",
-                "parameters": [
-                    {
-                        "description": "Datos del usuario",
-                        "name": "usuario",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.Usuario"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/model.Usuario"
-                        }
-                    },
-                    "400": {
-                        "description": "Datos inválidos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Error interno del servidor",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/usuarios/email/{email}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Obtiene un usuario específico por su email",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "usuarios"
-                ],
-                "summary": "Obtener usuario por email",
+                "summary": "Get user by email",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Email del usuario",
+                        "description": "User Email",
                         "name": "email",
                         "in": "path",
                         "required": true
@@ -2721,27 +3312,26 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Usuario"
+                            "$ref": "#/definitions/models.User"
                         }
                     },
                     "404": {
-                        "description": "Usuario no encontrado",
+                        "description": "User not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/usuarios/{id}": {
+        "/users/{id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Obtiene un usuario específico por su ID",
+                "description": "Get a specific user by their ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -2749,13 +3339,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "usuarios"
+                    "users"
                 ],
-                "summary": "Obtener usuario por ID",
+                "summary": "Get user by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del usuario",
+                        "description": "User ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -2765,14 +3355,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Usuario"
+                            "$ref": "#/definitions/models.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Usuario no encontrado",
+                        "description": "User not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -2783,7 +3378,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Actualiza los datos de un usuario existente",
+                "description": "Update an existing user's data",
                 "consumes": [
                     "application/json"
                 ],
@@ -2791,24 +3386,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "usuarios"
+                    "users"
                 ],
-                "summary": "Actualizar usuario",
+                "summary": "Update user",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del usuario",
+                        "description": "User ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Datos actualizados del usuario",
-                        "name": "usuario",
+                        "description": "Updated user data",
+                        "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Usuario"
+                            "$ref": "#/definitions/models.User"
                         }
                     }
                 ],
@@ -2816,28 +3411,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Usuario"
+                            "$ref": "#/definitions/models.User"
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Usuario no encontrado",
+                        "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -2848,7 +3446,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Elimina un usuario del sistema",
+                "description": "Delete a user from the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -2856,31 +3454,32 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "usuarios"
+                    "users"
                 ],
-                "summary": "Eliminar usuario",
+                "summary": "Delete user",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID del usuario",
+                        "description": "User ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Usuario eliminado correctamente",
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Error interno del servidor",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -2888,6 +3487,18 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "errors.ErrorResponse": {
+            "description": "Standard error response",
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "http.LoginRequest": {
             "type": "object",
             "required": [
@@ -2922,7 +3533,18 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Ejercicio": {
+        "http.MessageResponse": {
+            "description": "Simple message response",
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Operation completed successfully"
+                }
+            }
+        },
+        "models.Ejercicio": {
+            "description": "Exercise model",
             "type": "object",
             "properties": {
                 "grupo_muscular_id": {
@@ -2939,7 +3561,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Favorita": {
+        "models.Favorita": {
             "type": "object",
             "properties": {
                 "fecha": {
@@ -2956,7 +3578,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.GrupoMuscular": {
+        "models.GrupoMuscular": {
             "type": "object",
             "properties": {
                 "id": {
@@ -2967,7 +3589,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Medicion": {
+        "models.Medicion": {
             "type": "object",
             "properties": {
                 "fecha": {
@@ -2990,7 +3612,53 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Rutina": {
+        "models.Role": {
+            "description": "Role entity for user permissions and access control",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Audit fields",
+                    "type": "string",
+                    "example": "2023-01-01T00:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Administrator role with full access"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "is_active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_deleted": {
+                    "description": "Soft delete",
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_system": {
+                    "description": "System roles cannot be deleted",
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "type": "string",
+                    "example": "admin"
+                },
+                "priority": {
+                    "description": "For role hierarchy",
+                    "type": "integer",
+                    "example": 1
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2023-01-01T00:00:00Z"
+                }
+            }
+        },
+        "models.Rutina": {
             "type": "object",
             "properties": {
                 "fecha_creacion": {
@@ -3013,7 +3681,24 @@ const docTemplate = `{
                 }
             }
         },
-        "model.RutinaGrupoMuscular": {
+        "models.RutinaConGruposMusculares": {
+            "type": "object",
+            "properties": {
+                "grupos_musculares": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.GrupoMuscular"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "rutina_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.RutinaGrupoMuscular": {
             "type": "object",
             "properties": {
                 "grupo_muscular_id": {
@@ -3027,7 +3712,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Sesion": {
+        "models.Sesion": {
             "type": "object",
             "properties": {
                 "comentarios": {
@@ -3047,7 +3732,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.SesionEjercicio": {
+        "models.SesionEjercicio": {
             "type": "object",
             "properties": {
                 "ejercicio_id": {
@@ -3079,7 +3764,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.TipoEjercicio": {
+        "models.TipoEjercicio": {
             "type": "object",
             "properties": {
                 "id": {
@@ -3090,17 +3775,51 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Usuario": {
+        "models.User": {
+            "description": "User entity for authentication and profile management",
             "type": "object",
             "properties": {
+                "created_at": {
+                    "description": "Audit fields",
+                    "type": "string",
+                    "example": "2023-01-01T00:00:00Z"
+                },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "john@example.com"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
-                "nombre": {
-                    "type": "string"
+                "is_active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_deleted": {
+                    "description": "Soft delete",
+                    "type": "boolean",
+                    "example": false
+                },
+                "name": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "role": {
+                    "description": "Relations",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Role"
+                        }
+                    ]
+                },
+                "role_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2023-01-01T00:00:00Z"
                 }
             }
         }

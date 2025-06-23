@@ -12,6 +12,7 @@ type Container struct {
 	DB *gorm.DB
 
 	// Repositories
+	RoleRepo            repository.RoleRepository
 	UsuarioRepo         repository.UsuarioRepository
 	RutinaRepo          repository.RutinaRepository
 	GrupoMuscularRepo   repository.GrupoMuscularRepository
@@ -25,6 +26,7 @@ type Container struct {
 	RefreshTokenRepo    repository.RefreshTokenRepository
 
 	// Use Cases
+	RoleService            *usecase.RoleUseCase
 	UsuarioService         *usecase.UsuarioUsecase
 	RutinaService          *usecase.RutinaUsecase
 	GrupoMuscularService   *usecase.GrupoMuscularUseCase
@@ -65,6 +67,7 @@ func NewContainer() *Container {
 
 // initializeRepositories configura todos los repositories
 func (c *Container) initializeRepositories() {
+	c.RoleRepo = persistence.NewRoleGormRepository(c.DB)
 	c.UsuarioRepo = persistence.NewUsuarioGormRepository(c.DB)
 	c.RutinaRepo = persistence.NewRutinaGormRepository(c.DB)
 	c.GrupoMuscularRepo = persistence.NewGrupoMuscularGormRepository(c.DB)
@@ -80,6 +83,7 @@ func (c *Container) initializeRepositories() {
 
 // initializeUseCases configura todos los use cases
 func (c *Container) initializeUseCases() {
+	c.RoleService = usecase.NewRoleUseCase(c.RoleRepo)
 	c.UsuarioService = usecase.NewUsuarioUsecase(c.UsuarioRepo)
 	c.RutinaService = usecase.NewRutinaUsecase(c.RutinaRepo)
 	c.GrupoMuscularService = usecase.NewGrupoMuscularUseCase(c.GrupoMuscularRepo)

@@ -56,12 +56,13 @@ func NewAppError(httpStatus int, code, message string, err error) *AppError {
 
 // Standard application errors.
 var (
-	ErrNotFound            = NewAppError(http.StatusNotFound, "NOT_FOUND", "Resource not found.", nil)
-	ErrConflict            = NewAppError(http.StatusConflict, "CONFLICT", "A conflict occurred.", nil)
-	ErrInternalServer      = NewAppError(http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", "An internal server error occurred.", nil)
-	ErrBadRequest          = NewAppError(http.StatusBadRequest, "BAD_REQUEST", "The request is invalid.", nil)
-	ErrUnauthorized        = NewAppError(http.StatusUnauthorized, "UNAUTHORIZED", "Request is not authorized.", nil)
-	ErrEmailAlreadyExists  = NewAppError(http.StatusConflict, "EMAIL_ALREADY_EXISTS", "The provided email is already in use.", nil)
-	ErrInvalidCredentials  = NewAppError(http.StatusUnauthorized, "INVALID_CREDENTIALS", "Invalid credentials provided.", nil)
-	ErrInvalidRefreshToken = NewAppError(http.StatusUnauthorized, "INVALID_REFRESH_TOKEN", "The provided refresh token is invalid or has expired.", nil)
+	ErrNotFound               = NewAppError(http.StatusNotFound, "NOT_FOUND", "Resource not found.", nil)
+	ErrConflict               = NewAppError(http.StatusConflict, "CONFLICT", "A conflict occurred.", nil)
+	ErrInternalServer         = NewAppError(http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", "An internal server error occurred.", nil)
+	ErrBadRequest             = NewAppError(http.StatusBadRequest, "BAD_REQUEST", "The request is invalid.", nil)
+	ErrUnauthorized           = NewAppError(http.StatusUnauthorized, "UNAUTHORIZED", "Request is not authorized.", nil)
+	ErrEmailAlreadyExists     = NewAppError(http.StatusConflict, "EMAIL_ALREADY_EXISTS", "The provided email is already in use.", nil)
+	ErrInvalidCredentials     = NewAppError(http.StatusUnauthorized, "INVALID_CREDENTIALS", "Invalid credentials provided.", nil)
+	ErrInvalidRefreshToken    = NewAppError(http.StatusUnauthorized, "INVALID_REFRESH_TOKEN", "The provided refresh token is invalid or has expired.", nil)
+	ErrSystemRoleNotDeletable = NewAppError(http.StatusBadRequest, "SYSTEM_ROLE_NOT_DELETABLE", "System roles cannot be deleted.", nil)
 )

@@ -34,14 +34,14 @@ func NewUsuarioHandler(r gin.IRouter, usecase *usecase.UsuarioUsecase) {
 // @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        user body models.Usuario true "User data"
-// @Success      201  {object}  models.Usuario
+// @Param        user body models.User true "User data"
+// @Success      201  {object}  models.User
 // @Failure      400  {object}  errors.ErrorResponse
 // @Failure      409  {object}  errors.ErrorResponse
 // @Failure      500  {object}  errors.ErrorResponse
 // @Router       /users [post]
 func (h *UsuarioHandler) Create(c *gin.Context) {
-	var u models.Usuario
+	var u models.User
 	if err := c.ShouldBindJSON(&u); err != nil {
 		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
@@ -61,7 +61,7 @@ func (h *UsuarioHandler) Create(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {array}   models.Usuario
+// @Success      200  {array}   models.User
 // @Failure      500  {object}  errors.ErrorResponse
 // @Router       /users [get]
 func (h *UsuarioHandler) GetAll(c *gin.Context) {
@@ -81,7 +81,7 @@ func (h *UsuarioHandler) GetAll(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        id   path      int  true  "User ID"
-// @Success      200  {object}  models.Usuario
+// @Success      200  {object}  models.User
 // @Failure      400  {object}  errors.ErrorResponse "Invalid ID format"
 // @Failure      404  {object}  errors.ErrorResponse "User not found"
 // @Router       /users/{id} [get]
@@ -108,7 +108,7 @@ func (h *UsuarioHandler) GetByID(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        email path     string true "User Email"
-// @Success      200   {object} models.Usuario
+// @Success      200   {object} models.User
 // @Failure      404   {object} errors.ErrorResponse "User not found"
 // @Router       /users/email/{email} [get]
 func (h *UsuarioHandler) GetByEmail(c *gin.Context) {
@@ -130,8 +130,8 @@ func (h *UsuarioHandler) GetByEmail(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        id   path      int  true  "User ID"
-// @Param        user body      models.Usuario true "Updated user data"
-// @Success      200  {object}  models.Usuario
+// @Param        user body      models.User true "Updated user data"
+// @Success      200  {object}  models.User
 // @Failure      400  {object}  errors.ErrorResponse
 // @Failure      404  {object}  errors.ErrorResponse
 // @Failure      409  {object}  errors.ErrorResponse
@@ -144,7 +144,7 @@ func (h *UsuarioHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var u models.Usuario
+	var u models.User
 	if err := c.ShouldBindJSON(&u); err != nil {
 		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return

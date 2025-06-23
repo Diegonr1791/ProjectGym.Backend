@@ -1,5 +1,13 @@
 basePath: /api/v1
 definitions:
+  errors.ErrorResponse:
+    description: Standard error response
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
   http.LoginRequest:
     properties:
       email:
@@ -22,7 +30,15 @@ definitions:
             type: integer
         type: object
     type: object
-  model.Ejercicio:
+  http.MessageResponse:
+    description: Simple message response
+    properties:
+      message:
+        example: Operation completed successfully
+        type: string
+    type: object
+  models.Ejercicio:
+    description: Exercise model
     properties:
       grupo_muscular_id:
         type: integer
@@ -33,7 +49,7 @@ definitions:
       tipo_ejercicio_id:
         type: integer
     type: object
-  model.Favorita:
+  models.Favorita:
     properties:
       fecha:
         type: string
@@ -44,14 +60,14 @@ definitions:
       usuario_id:
         type: integer
     type: object
-  model.GrupoMuscular:
+  models.GrupoMuscular:
     properties:
       id:
         type: integer
       nombre:
         type: string
     type: object
-  model.Medicion:
+  models.Medicion:
     properties:
       fecha:
         type: string
@@ -66,7 +82,42 @@ definitions:
       usuario_id:
         type: integer
     type: object
-  model.Rutina:
+  models.Role:
+    description: Role entity for user permissions and access control
+    properties:
+      created_at:
+        description: Audit fields
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      description:
+        example: Administrator role with full access
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_active:
+        example: true
+        type: boolean
+      is_deleted:
+        description: Soft delete
+        example: false
+        type: boolean
+      is_system:
+        description: System roles cannot be deleted
+        example: true
+        type: boolean
+      name:
+        example: admin
+        type: string
+      priority:
+        description: For role hierarchy
+        example: 1
+        type: integer
+      updated_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+    type: object
+  models.Rutina:
     properties:
       fecha_creacion:
         type: string
@@ -81,7 +132,18 @@ definitions:
       usuario_id:
         type: integer
     type: object
-  model.RutinaGrupoMuscular:
+  models.RutinaConGruposMusculares:
+    properties:
+      grupos_musculares:
+        items:
+          $ref: '#/definitions/models.GrupoMuscular'
+        type: array
+      id:
+        type: integer
+      rutina_id:
+        type: integer
+    type: object
+  models.RutinaGrupoMuscular:
     properties:
       grupo_muscular_id:
         type: integer
@@ -90,7 +152,7 @@ definitions:
       rutina_id:
         type: integer
     type: object
-  model.Sesion:
+  models.Sesion:
     properties:
       comentarios:
         type: string
@@ -103,7 +165,7 @@ definitions:
       usuario_id:
         type: integer
     type: object
-  model.SesionEjercicio:
+  models.SesionEjercicio:
     properties:
       ejercicio_id:
         type: integer
@@ -124,20 +186,45 @@ definitions:
       sesion_id:
         type: integer
     type: object
-  model.TipoEjercicio:
+  models.TipoEjercicio:
     properties:
       id:
         type: integer
       nombre:
         type: string
     type: object
-  model.Usuario:
+  models.User:
+    description: User entity for authentication and profile management
     properties:
+      created_at:
+        description: Audit fields
+        example: "2023-01-01T00:00:00Z"
+        type: string
       email:
+        example: john@example.com
         type: string
       id:
+        example: 1
         type: integer
-      nombre:
+      is_active:
+        example: true
+        type: boolean
+      is_deleted:
+        description: Soft delete
+        example: false
+        type: boolean
+      name:
+        example: John Doe
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/models.Role'
+        description: Relations
+      role_id:
+        example: 1
+        type: integer
+      updated_at:
+        example: "2023-01-01T00:00:00Z"
         type: string
     type: object
 host: localhost:8080
@@ -158,10 +245,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Autentica un usuario, genera un access token y un refresh token
-        en una cookie segura.
+      description: Authenticates a user, generates an access token and a refresh token
+        in a secure cookie.
       parameters:
-      - description: Credenciales de login
+      - description: Login credentials
         in: body
         name: credentials
         required: true
@@ -175,71 +262,67 @@ paths:
           schema:
             $ref: '#/definitions/http.LoginResponse'
         "400":
-          description: Datos inválidos
+          description: Invalid data
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "401":
-          description: Credenciales inválidas
+          description: Invalid credentials
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal server error
           schema:
-            additionalProperties: true
-            type: object
-      summary: Iniciar sesión
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Login
       tags:
-      - autenticación
+      - authentication
   /auth/logout:
     post:
-      description: Invalida el refresh token del usuario.
+      description: Invalidates the user's refresh token.
       produces:
       - application/json
       responses:
         "200":
-          description: Sesión cerrada exitosamente
+          description: Session closed successfully
           schema:
-            additionalProperties: true
+            additionalProperties:
+              type: string
             type: object
         "400":
-          description: No hay sesión activa para cerrar
+          description: No active session to close
           schema:
-            additionalProperties: true
-            type: object
-      summary: Cerrar sesión
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Logout
       tags:
-      - autenticación
+      - authentication
   /auth/refresh:
     post:
-      description: Renueva el access token usando un refresh token válido desde una
-        cookie.
+      description: Renews the access token using a valid refresh token from a cookie.
       produces:
       - application/json
       responses:
         "200":
-          description: Nuevo access token
+          description: New access token
           schema:
-            $ref: '#/definitions/http.LoginResponse'
-        "400":
-          description: Cookie no encontrada
-          schema:
-            additionalProperties: true
+            additionalProperties:
+              type: string
             type: object
+        "400":
+          description: Cookie not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "401":
-          description: Refresh token inválido
+          description: Invalid refresh token
           schema:
-            additionalProperties: true
-            type: object
-      summary: Refrescar token
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Refresh token
       tags:
-      - autenticación
-  /ejercicio:
+      - authentication
+  /exercise-types:
     get:
       consumes:
       - application/json
-      description: Obtiene la lista completa de ejercicios
+      description: Get a complete list of exercise types
       produces:
       - application/json
       responses:
@@ -247,58 +330,55 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Ejercicio'
+              $ref: '#/definitions/models.TipoEjercicio'
             type: array
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener todos los ejercicios
+      summary: Get all exercise types
       tags:
-      - ejercicios
+      - exercise-types
     post:
       consumes:
       - application/json
-      description: Crea un nuevo ejercicio en el sistema
+      description: Create a new exercise type in the system
       parameters:
-      - description: Datos del ejercicio
+      - description: Exercise type data
         in: body
-        name: ejercicio
+        name: exercise-type
         required: true
         schema:
-          $ref: '#/definitions/model.Ejercicio'
+          $ref: '#/definitions/models.TipoEjercicio'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.Ejercicio'
+            $ref: '#/definitions/models.TipoEjercicio'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Crear nuevo ejercicio
+      summary: Create a new exercise type
       tags:
-      - ejercicios
-  /ejercicio/{id}:
+      - exercise-types
+  /exercise-types/{id}:
     delete:
       consumes:
       - application/json
-      description: Elimina un ejercicio del sistema
+      description: Delete an exercise type from the system
       parameters:
-      - description: ID del ejercicio
+      - description: Exercise Type ID
         in: path
         name: id
         required: true
@@ -307,28 +387,26 @@ paths:
       - application/json
       responses:
         "204":
-          description: Ejercicio eliminado
+          description: No Content
         "400":
-          description: ID inválido
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal server error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Eliminar ejercicio
+      summary: Delete exercise type
       tags:
-      - ejercicios
+      - exercise-types
     get:
       consumes:
       - application/json
-      description: Obtiene un ejercicio específico por su ID
+      description: Get a specific exercise type by its ID
       parameters:
-      - description: ID del ejercicio
+      - description: Exercise Type ID
         in: path
         name: id
         required: true
@@ -339,71 +417,65 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Ejercicio'
+            $ref: '#/definitions/models.TipoEjercicio'
         "400":
-          description: ID inválido
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
-          description: Ejercicio no encontrado
+          description: Exercise type not found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener ejercicio por ID
+      summary: Get exercise type by ID
       tags:
-      - ejercicios
+      - exercise-types
     put:
       consumes:
       - application/json
-      description: Actualiza un ejercicio existente
+      description: Update an existing exercise type
       parameters:
-      - description: ID del ejercicio
+      - description: Exercise Type ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Datos actualizados del ejercicio
+      - description: Updated exercise type data
         in: body
-        name: ejercicio
+        name: exercise-type
         required: true
         schema:
-          $ref: '#/definitions/model.Ejercicio'
+          $ref: '#/definitions/models.TipoEjercicio'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Ejercicio'
+            $ref: '#/definitions/models.TipoEjercicio'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Actualizar ejercicio
+      summary: Update exercise type
       tags:
-      - ejercicios
-  /ejercicio/grupo-muscular/{id}:
+      - exercise-types
+  /exercises:
     get:
       consumes:
       - application/json
-      description: Obtiene todos los ejercicios de un grupo muscular específico
-      parameters:
-      - description: ID del grupo muscular
-        in: path
-        name: id
-        required: true
-        type: integer
+      description: Get a complete list of exercises
       produces:
       - application/json
       responses:
@@ -411,87 +483,55 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Ejercicio'
-            type: array
-        "400":
-          description: ID inválido
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Obtener ejercicios por grupo muscular
-      tags:
-      - ejercicios
-  /favorita:
-    get:
-      consumes:
-      - application/json
-      description: Obtiene la lista completa de favoritas
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.Favorita'
+              $ref: '#/definitions/models.Ejercicio'
             type: array
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener todas las favoritas
+      summary: Get all exercises
       tags:
-      - favoritas
+      - exercises
     post:
       consumes:
       - application/json
-      description: Crea una nueva favorita en el sistema
+      description: Create a new exercise in the system
       parameters:
-      - description: Datos de la favorita
+      - description: Exercise data
         in: body
-        name: favorita
+        name: exercise
         required: true
         schema:
-          $ref: '#/definitions/model.Favorita'
+          $ref: '#/definitions/models.Ejercicio'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.Favorita'
+            $ref: '#/definitions/models.Ejercicio'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Crear nueva favorita
+      summary: Create a new exercise
       tags:
-      - favoritas
-  /favorita/{id}:
+      - exercises
+  /exercises/{id}:
     delete:
       consumes:
       - application/json
-      description: Elimina una favorita del sistema
+      description: Delete an exercise from the system
       parameters:
-      - description: ID de la favorita
+      - description: Exercise ID
         in: path
         name: id
         required: true
@@ -500,23 +540,26 @@ paths:
       - application/json
       responses:
         "204":
-          description: Favorita eliminada
-        "500":
-          description: Error interno del servidor
+          description: No Content
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Eliminar favorita
+      summary: Delete exercise
       tags:
-      - favoritas
+      - exercises
     get:
       consumes:
       - application/json
-      description: Obtiene una favorita específica por su ID
+      description: Get a specific exercise by its ID
       parameters:
-      - description: ID de la favorita
+      - description: Exercise ID
         in: path
         name: id
         required: true
@@ -527,64 +570,69 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Favorita'
-        "404":
-          description: Favorita no encontrada
+            $ref: '#/definitions/models.Ejercicio'
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Exercise not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener favorita por ID
+      summary: Get exercise by ID
       tags:
-      - favoritas
+      - exercises
     put:
       consumes:
       - application/json
-      description: Actualiza una favorita existente
+      description: Update an existing exercise
       parameters:
-      - description: ID de la favorita
+      - description: Exercise ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Datos actualizados de la favorita
+      - description: Updated exercise data
         in: body
-        name: favorita
+        name: exercise
         required: true
         schema:
-          $ref: '#/definitions/model.Favorita'
+          $ref: '#/definitions/models.Ejercicio'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Favorita'
+            $ref: '#/definitions/models.Ejercicio'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Actualizar favorita
+      summary: Update exercise
       tags:
-      - favoritas
-  /favorita/usuario/{usuario_id}:
+      - exercises
+  /exercises/muscle-group/{id}:
     get:
       consumes:
       - application/json
-      description: Obtiene todas las favoritas de un usuario específico
+      description: Get all exercises of a specific muscle group
       parameters:
-      - description: ID del usuario
+      - description: Muscle Group ID
         in: path
-        name: usuario_id
+        name: id
         required: true
         type: integer
       produces:
@@ -594,23 +642,26 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Favorita'
+              $ref: '#/definitions/models.Ejercicio'
             type: array
-        "500":
-          description: Error interno del servidor
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener favoritas por usuario
+      summary: Get exercises by muscle group
       tags:
-      - favoritas
-  /grupo-muscular:
+      - exercises
+  /favorites:
     get:
       consumes:
       - application/json
-      description: Obtiene la lista completa de grupos musculares
+      description: Get a complete list of favorites
       produces:
       - application/json
       responses:
@@ -618,58 +669,55 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.GrupoMuscular'
+              $ref: '#/definitions/models.Favorita'
             type: array
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener todos los grupos musculares
+      summary: Get all favorites
       tags:
-      - grupos-musculares
+      - favorites
     post:
       consumes:
       - application/json
-      description: Crea un nuevo grupo muscular en el sistema
+      description: Create a new favorite in the system
       parameters:
-      - description: Datos del grupo muscular
+      - description: Favorite data
         in: body
-        name: grupo
+        name: favorite
         required: true
         schema:
-          $ref: '#/definitions/model.GrupoMuscular'
+          $ref: '#/definitions/models.Favorita'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.GrupoMuscular'
+            $ref: '#/definitions/models.Favorita'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Crear nuevo grupo muscular
+      summary: Create a new favorite
       tags:
-      - grupos-musculares
-  /grupo-muscular/{id}:
+      - favorites
+  /favorites/{id}:
     delete:
       consumes:
       - application/json
-      description: Elimina un grupo muscular del sistema
+      description: Delete a favorite from the system
       parameters:
-      - description: ID del grupo muscular
+      - description: Favorite ID
         in: path
         name: id
         required: true
@@ -678,23 +726,26 @@ paths:
       - application/json
       responses:
         "204":
-          description: Grupo muscular eliminado
-        "500":
-          description: Error interno del servidor
+          description: No Content
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Eliminar grupo muscular
+      summary: Delete favorite
       tags:
-      - grupos-musculares
+      - favorites
     get:
       consumes:
       - application/json
-      description: Obtiene un grupo muscular específico por su ID
+      description: Get a specific favorite by its ID
       parameters:
-      - description: ID del grupo muscular
+      - description: Favorite ID
         in: path
         name: id
         required: true
@@ -705,60 +756,71 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.GrupoMuscular'
-        "404":
-          description: Grupo muscular no encontrado
+            $ref: '#/definitions/models.Favorita'
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Favorite not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener grupo muscular por ID
+      summary: Get favorite by ID
       tags:
-      - grupos-musculares
+      - favorites
     put:
       consumes:
       - application/json
-      description: Actualiza un grupo muscular existente
+      description: Update an existing favorite
       parameters:
-      - description: ID del grupo muscular
+      - description: Favorite ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Datos actualizados del grupo muscular
+      - description: Updated favorite data
         in: body
-        name: grupo
+        name: favorite
         required: true
         schema:
-          $ref: '#/definitions/model.GrupoMuscular'
+          $ref: '#/definitions/models.Favorita'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.GrupoMuscular'
+            $ref: '#/definitions/models.Favorita'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Actualizar grupo muscular
+      summary: Update favorite
       tags:
-      - grupos-musculares
-  /medicion:
+      - favorites
+  /favorites/user/{user_id}:
     get:
       consumes:
       - application/json
-      description: Obtiene la lista completa de mediciones
+      description: Get all favorites of a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -766,58 +828,82 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Medicion'
+              $ref: '#/definitions/models.Favorita'
             type: array
-        "500":
-          description: Error interno del servidor
+        "400":
+          description: Invalid user ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener todas las mediciones
+      summary: Get favorites by user
       tags:
-      - mediciones
+      - favorites
+  /measurements:
+    get:
+      consumes:
+      - application/json
+      description: Get a complete list of measurements
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Medicion'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all measurements
+      tags:
+      - measurements
     post:
       consumes:
       - application/json
-      description: Crea una nueva medición en el sistema
+      description: Create a new measurement in the system
       parameters:
-      - description: Datos de la medición
+      - description: Measurement data
         in: body
-        name: medicion
+        name: measurement
         required: true
         schema:
-          $ref: '#/definitions/model.Medicion'
+          $ref: '#/definitions/models.Medicion'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.Medicion'
+            $ref: '#/definitions/models.Medicion'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Crear nueva medición
+      summary: Create a new measurement
       tags:
-      - mediciones
-  /medicion/{id}:
+      - measurements
+  /measurements/{id}:
     delete:
       consumes:
       - application/json
-      description: Elimina una medición del sistema
+      description: Delete a measurement from the system
       parameters:
-      - description: ID de la medición
+      - description: Measurement ID
         in: path
         name: id
         required: true
@@ -826,23 +912,26 @@ paths:
       - application/json
       responses:
         "204":
-          description: Medición eliminada
-        "500":
-          description: Error interno del servidor
+          description: No Content
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Eliminar medición
+      summary: Delete measurement
       tags:
-      - mediciones
+      - measurements
     get:
       consumes:
       - application/json
-      description: Obtiene una medición específica por su ID
+      description: Get a specific measurement by its ID
       parameters:
-      - description: ID de la medición
+      - description: Measurement ID
         in: path
         name: id
         required: true
@@ -853,64 +942,69 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Medicion'
-        "404":
-          description: Medición no encontrada
+            $ref: '#/definitions/models.Medicion'
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Measurement not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener medición por ID
+      summary: Get measurement by ID
       tags:
-      - mediciones
+      - measurements
     put:
       consumes:
       - application/json
-      description: Actualiza una medición existente
+      description: Update an existing measurement
       parameters:
-      - description: ID de la medición
+      - description: Measurement ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Datos actualizados de la medición
+      - description: Updated measurement data
         in: body
-        name: medicion
+        name: measurement
         required: true
         schema:
-          $ref: '#/definitions/model.Medicion'
+          $ref: '#/definitions/models.Medicion'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Medicion'
+            $ref: '#/definitions/models.Medicion'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Actualizar medición
+      summary: Update measurement
       tags:
-      - mediciones
-  /medicion/usuario/{usuario_id}:
+      - measurements
+  /measurements/user/{user_id}:
     get:
       consumes:
       - application/json
-      description: Obtiene todas las mediciones de un usuario específico
+      description: Get all measurements of a specific user
       parameters:
-      - description: ID del usuario
+      - description: User ID
         in: path
-        name: usuario_id
+        name: user_id
         required: true
         type: integer
       produces:
@@ -920,21 +1014,26 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Medicion'
+              $ref: '#/definitions/models.Medicion'
             type: array
-        "500":
-          description: Error interno del servidor
+        "400":
+          description: Invalid user ID format
           schema:
-            additionalProperties: true
-            type: object
-      summary: Obtener mediciones por usuario
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get measurements by user
       tags:
-      - mediciones
-  /rutina-gm:
+      - measurements
+  /muscle-groups:
     get:
       consumes:
       - application/json
-      description: Obtiene la lista completa de rutinas de grupo muscular
+      description: Get a complete list of muscle groups
       produces:
       - application/json
       responses:
@@ -942,457 +1041,55 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.RutinaGrupoMuscular'
+              $ref: '#/definitions/models.GrupoMuscular'
             type: array
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener todas las rutinas de grupo muscular
+      summary: Get all muscle groups
       tags:
-      - rutinas-grupo-muscular
+      - muscle-groups
     post:
       consumes:
       - application/json
-      description: Crea una nueva rutina de grupo muscular en el sistema
+      description: Create a new muscle group in the system
       parameters:
-      - description: Datos de la rutina de grupo muscular
+      - description: Muscle group data
         in: body
-        name: rutina
+        name: muscle-group
         required: true
         schema:
-          $ref: '#/definitions/model.RutinaGrupoMuscular'
+          $ref: '#/definitions/models.GrupoMuscular'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.RutinaGrupoMuscular'
+            $ref: '#/definitions/models.GrupoMuscular'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Crear nueva rutina de grupo muscular
+      summary: Create a new muscle group
       tags:
-      - rutinas-grupo-muscular
-  /rutina-gm/{id}:
+      - muscle-groups
+  /muscle-groups/{id}:
     delete:
       consumes:
       - application/json
-      description: Elimina una rutina de grupo muscular del sistema
+      description: Delete a muscle group from the system
       parameters:
-      - description: ID de la rutina de grupo muscular
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Rutina grupo muscular eliminada correctamente
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Eliminar rutina de grupo muscular
-      tags:
-      - rutinas-grupo-muscular
-    get:
-      consumes:
-      - application/json
-      description: Obtiene una rutina de grupo muscular específica por su ID
-      parameters:
-      - description: ID de la rutina de grupo muscular
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.RutinaGrupoMuscular'
-        "404":
-          description: Rutina grupo muscular no encontrada
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Obtener rutina de grupo muscular por ID
-      tags:
-      - rutinas-grupo-muscular
-    put:
-      consumes:
-      - application/json
-      description: Actualiza una rutina de grupo muscular existente
-      parameters:
-      - description: ID de la rutina de grupo muscular
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Datos actualizados de la rutina de grupo muscular
-        in: body
-        name: rutina
-        required: true
-        schema:
-          $ref: '#/definitions/model.RutinaGrupoMuscular'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.RutinaGrupoMuscular'
-        "400":
-          description: Datos inválidos
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Rutina grupo muscular no encontrada
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Actualizar rutina de grupo muscular
-      tags:
-      - rutinas-grupo-muscular
-  /rutina/grupo-muscular/{id}:
-    get:
-      consumes:
-      - application/json
-      description: Obtiene todos los grupos musculares asociados a una rutina específica
-      parameters:
-      - description: ID de la rutina
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.GrupoMuscular'
-            type: array
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Obtener grupos musculares por rutina
-      tags:
-      - rutinas-grupo-muscular
-  /rutinas:
-    get:
-      consumes:
-      - application/json
-      description: Obtiene la lista completa de rutinas
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.Rutina'
-            type: array
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Obtener todas las rutinas
-      tags:
-      - rutinas
-    post:
-      consumes:
-      - application/json
-      description: Crea una nueva rutina en el sistema
-      parameters:
-      - description: Datos de la rutina
-        in: body
-        name: rutina
-        required: true
-        schema:
-          $ref: '#/definitions/model.Rutina'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.Rutina'
-        "400":
-          description: Datos inválidos
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Crear nueva rutina
-      tags:
-      - rutinas
-  /rutinas/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Elimina una rutina del sistema
-      parameters:
-      - description: ID de la rutina
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Rutina eliminada correctamente
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Eliminar rutina
-      tags:
-      - rutinas
-    get:
-      consumes:
-      - application/json
-      description: Obtiene una rutina específica por su ID
-      parameters:
-      - description: ID de la rutina
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.Rutina'
-        "404":
-          description: Rutina no encontrada
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Obtener rutina por ID
-      tags:
-      - rutinas
-    put:
-      consumes:
-      - application/json
-      description: Actualiza una rutina existente
-      parameters:
-      - description: ID de la rutina
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Datos actualizados de la rutina
-        in: body
-        name: rutina
-        required: true
-        schema:
-          $ref: '#/definitions/model.Rutina'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.Rutina'
-        "400":
-          description: Datos inválidos
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Rutina no encontrada
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Actualizar rutina
-      tags:
-      - rutinas
-  /sesion:
-    get:
-      consumes:
-      - application/json
-      description: Obtiene la lista completa de sesiones de entrenamiento
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.Sesion'
-            type: array
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Obtener todas las sesiones
-      tags:
-      - sesiones
-    post:
-      consumes:
-      - application/json
-      description: Crea una nueva sesión de entrenamiento en el sistema
-      parameters:
-      - description: Datos de la sesión
-        in: body
-        name: sesion
-        required: true
-        schema:
-          $ref: '#/definitions/model.Sesion'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/model.Sesion'
-        "400":
-          description: Datos inválidos
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Crear nueva sesión
-      tags:
-      - sesiones
-  /sesion-ejercicio:
-    get:
-      consumes:
-      - application/json
-      description: Obtiene la lista completa de ejercicios de sesión
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.SesionEjercicio'
-            type: array
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Obtener todos los ejercicios de sesión
-      tags:
-      - sesion-ejercicio
-    post:
-      consumes:
-      - application/json
-      description: Crea un nuevo ejercicio de sesión en el sistema
-      parameters:
-      - description: Datos del ejercicio de sesión
-        in: body
-        name: sesion_ejercicio
-        required: true
-        schema:
-          $ref: '#/definitions/model.SesionEjercicio'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/model.SesionEjercicio'
-        "400":
-          description: Datos inválidos
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Error interno del servidor
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Crear nuevo ejercicio de sesión
-      tags:
-      - sesion-ejercicio
-  /sesion-ejercicio/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Elimina un ejercicio de sesión del sistema
-      parameters:
-      - description: ID del ejercicio de sesión
+      - description: Muscle Group ID
         in: path
         name: id
         required: true
@@ -1401,23 +1098,26 @@ paths:
       - application/json
       responses:
         "204":
-          description: Ejercicio de sesión eliminado
-        "500":
-          description: Error interno del servidor
+          description: No Content
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Eliminar ejercicio de sesión
+      summary: Delete muscle group
       tags:
-      - sesion-ejercicio
+      - muscle-groups
     get:
       consumes:
       - application/json
-      description: Obtiene un ejercicio de sesión específico por su ID
+      description: Get a specific muscle group by its ID
       parameters:
-      - description: ID del ejercicio de sesión
+      - description: Muscle Group ID
         in: path
         name: id
         required: true
@@ -1428,74 +1128,63 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SesionEjercicio'
-        "404":
-          description: Ejercicio de sesión no encontrado
+            $ref: '#/definitions/models.GrupoMuscular'
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Muscle group not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener ejercicio de sesión por ID
+      summary: Get muscle group by ID
       tags:
-      - sesion-ejercicio
+      - muscle-groups
     put:
       consumes:
       - application/json
-      description: Actualiza un ejercicio de sesión existente
+      description: Update an existing muscle group
       parameters:
-      - description: ID del ejercicio de sesión
+      - description: Muscle Group ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Datos actualizados del ejercicio de sesión
+      - description: Updated muscle group data
         in: body
-        name: sesion_ejercicio
+        name: muscle-group
         required: true
         schema:
-          $ref: '#/definitions/model.SesionEjercicio'
+          $ref: '#/definitions/models.GrupoMuscular'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SesionEjercicio'
+            $ref: '#/definitions/models.GrupoMuscular'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Actualizar ejercicio de sesión
+      summary: Update muscle group
       tags:
-      - sesion-ejercicio
-  /sesion-ejercicio/sesion/{id}:
+      - muscle-groups
+  /roles:
     get:
-      consumes:
-      - application/json
-      description: Obtiene todos los ejercicios de una sesión específica
-      parameters:
-      - description: ID de la sesión
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: 'Fecha desde (formato: 2006-01-02)'
-        in: query
-        name: fechaDesde
-        type: string
-      - description: 'Fecha hasta (formato: 2006-01-02)'
-        in: query
-        name: fechaHasta
-        type: string
+      description: Get all active roles in the system
       produces:
       - application/json
       responses:
@@ -1503,48 +1192,57 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.SesionEjercicio'
+              $ref: '#/definitions/models.Role'
             type: array
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
-      summary: Obtener ejercicios de sesión por ID de sesión
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all active roles
       tags:
-      - sesiones-ejercicios
-  /sesion/{id}:
-    delete:
+      - roles
+    post:
       consumes:
       - application/json
-      description: Elimina una sesión del sistema
+      description: Create a new role in the system
       parameters:
-      - description: ID de la sesión
-        in: path
-        name: id
+      - description: Role object
+        in: body
+        name: role
         required: true
-        type: integer
+        schema:
+          $ref: '#/definitions/models.Role'
       produces:
       - application/json
       responses:
-        "204":
-          description: Sesión eliminada
-        "500":
-          description: Error interno del servidor
+        "201":
+          description: Created
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/models.Role'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Eliminar sesión
+      summary: Create a new role
       tags:
-      - sesiones
-    get:
-      consumes:
-      - application/json
-      description: Obtiene una sesión específica por su ID
+      - roles
+  /roles/{id}:
+    delete:
+      description: Mark a role as deleted (soft delete)
       parameters:
-      - description: ID de la sesión
+      - description: Role ID
         in: path
         name: id
         required: true
@@ -1555,69 +1253,211 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Sesion'
-        "404":
-          description: Sesión no encontrada
+            $ref: '#/definitions/http.MessageResponse'
+        "400":
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener sesión por ID
+      summary: Soft delete a role
       tags:
-      - sesiones
+      - roles
+    get:
+      description: Get a role by its ID
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Role'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a role by ID
+      tags:
+      - roles
     put:
       consumes:
       - application/json
-      description: Actualiza una sesión existente
+      description: Update an existing role
       parameters:
-      - description: ID de la sesión
+      - description: Role ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Datos actualizados de la sesión
+      - description: Role object
         in: body
-        name: sesion
+        name: role
         required: true
         schema:
-          $ref: '#/definitions/model.Sesion'
+          $ref: '#/definitions/models.Role'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Sesion'
+            $ref: '#/definitions/models.Role'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Actualizar sesión
+      summary: Update a role
       tags:
-      - sesiones
-  /sesion/fecha:
-    get:
-      consumes:
-      - application/json
-      description: Obtiene todas las sesiones dentro de un rango de fechas específico
+      - roles
+  /roles/{id}/hard:
+    delete:
+      description: Permanently delete a role from the system
       parameters:
-      - description: 'Fecha desde (formato ISO: 2024-01-02T15:04:05Z)'
-        in: query
-        name: fechaDesde
+      - description: Role ID
+        in: path
+        name: id
         required: true
-        type: string
-      - description: 'Fecha hasta (formato ISO: 2024-01-02T15:04:05Z)'
-        in: query
-        name: fechaHasta
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Hard delete a role
+      tags:
+      - roles
+  /roles/{id}/restore:
+    post:
+      description: Restore a soft-deleted role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Restore a deleted role
+      tags:
+      - roles
+  /roles/active:
+    get:
+      description: Get all active roles in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Role'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all active roles
+      tags:
+      - roles
+  /roles/all:
+    get:
+      description: Get all roles in the system including deleted ones
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Role'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all roles including deleted ones
+      tags:
+      - roles
+  /roles/name/{name}:
+    get:
+      description: Get a role by its name
+      parameters:
+      - description: Role name
+        in: path
+        name: name
         required: true
         type: string
       produces:
@@ -1626,35 +1466,23 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/model.Sesion'
-            type: array
-        "400":
-          description: Formato de fecha inválido
+            $ref: '#/definitions/models.Role'
+        "404":
+          description: Not Found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener sesiones por rango de fechas
+      summary: Get a role by name
       tags:
-      - sesiones
-  /sesion/usuario/{id}:
+      - roles
+  /roles/system:
     get:
-      consumes:
-      - application/json
-      description: Obtiene todas las sesiones de un usuario específico
-      parameters:
-      - description: ID del usuario
-        in: path
-        name: id
-        required: true
-        type: integer
+      description: Get all system roles in the system
       produces:
       - application/json
       responses:
@@ -1662,23 +1490,22 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Sesion'
+              $ref: '#/definitions/models.Role'
             type: array
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener sesiones por usuario
+      summary: Get all system roles
       tags:
-      - sesiones
-  /tipo-ejercicio:
+      - roles
+  /routine-muscle-groups:
     get:
       consumes:
       - application/json
-      description: Obtiene la lista completa de tipos de ejercicio
+      description: Get a complete list of routine muscle groups
       produces:
       - application/json
       responses:
@@ -1686,58 +1513,55 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.TipoEjercicio'
+              $ref: '#/definitions/models.RutinaGrupoMuscular'
             type: array
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener todos los tipos de ejercicio
+      summary: Get all routine muscle groups
       tags:
-      - tipos-ejercicio
+      - routine-muscle-groups
     post:
       consumes:
       - application/json
-      description: Crea un nuevo tipo de ejercicio en el sistema
+      description: Create a new routine muscle group in the system
       parameters:
-      - description: Datos del tipo de ejercicio
+      - description: Routine muscle group data
         in: body
-        name: tipo
+        name: routine_muscle_group
         required: true
         schema:
-          $ref: '#/definitions/model.TipoEjercicio'
+          $ref: '#/definitions/models.RutinaGrupoMuscular'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.TipoEjercicio'
+            $ref: '#/definitions/models.RutinaGrupoMuscular'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Crear nuevo tipo de ejercicio
+      summary: Create a new routine muscle group
       tags:
-      - tipos-ejercicio
-  /tipo-ejercicio/{id}:
+      - routine-muscle-groups
+  /routine-muscle-groups/{id}:
     delete:
       consumes:
       - application/json
-      description: Elimina un tipo de ejercicio del sistema
+      description: Delete a routine muscle group from the system
       parameters:
-      - description: ID del tipo de ejercicio
+      - description: Routine muscle group ID
         in: path
         name: id
         required: true
@@ -1746,23 +1570,26 @@ paths:
       - application/json
       responses:
         "204":
-          description: Tipo de ejercicio eliminado
-        "500":
-          description: Error interno del servidor
+          description: No Content
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Eliminar tipo de ejercicio
+      summary: Delete routine muscle group
       tags:
-      - tipos-ejercicio
+      - routine-muscle-groups
     get:
       consumes:
       - application/json
-      description: Obtiene un tipo de ejercicio específico por su ID
+      description: Get a specific routine muscle group by its ID
       parameters:
-      - description: ID del tipo de ejercicio
+      - description: Routine muscle group ID
         in: path
         name: id
         required: true
@@ -1773,65 +1600,96 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.TipoEjercicio'
-        "404":
-          description: Tipo de ejercicio no encontrado
+            $ref: '#/definitions/models.RutinaGrupoMuscular'
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Routine muscle group not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener tipo de ejercicio por ID
+      summary: Get routine muscle group by ID
       tags:
-      - tipos-ejercicio
+      - routine-muscle-groups
     put:
       consumes:
       - application/json
-      description: Actualiza un tipo de ejercicio existente
+      description: Update an existing routine muscle group
       parameters:
-      - description: ID del tipo de ejercicio
+      - description: Routine muscle group ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Datos actualizados del tipo de ejercicio
+      - description: Updated routine muscle group data
         in: body
-        name: tipo
+        name: routine_muscle_group
         required: true
         schema:
-          $ref: '#/definitions/model.TipoEjercicio'
+          $ref: '#/definitions/models.RutinaGrupoMuscular'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.TipoEjercicio'
+            $ref: '#/definitions/models.RutinaGrupoMuscular'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
-          description: Tipo de ejercicio no encontrado
+          description: Not Found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Actualizar tipo de ejercicio
+      summary: Update routine muscle group
       tags:
-      - tipos-ejercicio
-  /usuarios:
+      - routine-muscle-groups
+  /routine-muscle-groups/routine/{id}/muscle-groups:
     get:
       consumes:
       - application/json
-      description: Obtiene la lista completa de usuarios
+      description: Get all muscle groups associated with a specific routine
+      parameters:
+      - description: Routine ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RutinaConGruposMusculares'
+        "400":
+          description: Invalid routine ID format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get muscle groups by routine
+      tags:
+      - routine-muscle-groups
+  /routines:
+    get:
+      consumes:
+      - application/json
+      description: Get a complete list of routines
       produces:
       - application/json
       responses:
@@ -1839,56 +1697,55 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Usuario'
+              $ref: '#/definitions/models.Rutina'
             type: array
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener todos los usuarios
+      summary: Get all routines
       tags:
-      - usuarios
+      - routines
     post:
       consumes:
       - application/json
-      description: Registra un nuevo usuario en el sistema
+      description: Create a new routine in the system
       parameters:
-      - description: Datos del usuario
+      - description: Routine data
         in: body
-        name: usuario
+        name: routine
         required: true
         schema:
-          $ref: '#/definitions/model.Usuario'
+          $ref: '#/definitions/models.Rutina'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.Usuario'
+            $ref: '#/definitions/models.Rutina'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
-      summary: Registrar nuevo usuario
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new routine
       tags:
-      - usuarios
-  /usuarios/{id}:
+      - routines
+  /routines/{id}:
     delete:
       consumes:
       - application/json
-      description: Elimina un usuario del sistema
+      description: Delete a routine from the system
       parameters:
-      - description: ID del usuario
+      - description: Routine ID
         in: path
         name: id
         required: true
@@ -1896,27 +1753,27 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: Usuario eliminado correctamente
+        "204":
+          description: No Content
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal server error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Eliminar usuario
+      summary: Delete routine
       tags:
-      - usuarios
+      - routines
     get:
       consumes:
       - application/json
-      description: Obtiene un usuario específico por su ID
+      description: Get a specific routine by its ID
       parameters:
-      - description: ID del usuario
+      - description: Routine ID
         in: path
         name: id
         required: true
@@ -1927,67 +1784,644 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Usuario'
-        "404":
-          description: Usuario no encontrado
+            $ref: '#/definitions/models.Rutina'
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Routine not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener usuario por ID
+      summary: Get routine by ID
       tags:
-      - usuarios
+      - routines
     put:
       consumes:
       - application/json
-      description: Actualiza los datos de un usuario existente
+      description: Update an existing routine
       parameters:
-      - description: ID del usuario
+      - description: Routine ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Datos actualizados del usuario
+      - description: Updated routine data
         in: body
-        name: usuario
+        name: routine
         required: true
         schema:
-          $ref: '#/definitions/model.Usuario'
+          $ref: '#/definitions/models.Rutina'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Usuario'
+            $ref: '#/definitions/models.Rutina'
         "400":
-          description: Datos inválidos
+          description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
-          description: Usuario no encontrado
+          description: Not Found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Error interno del servidor
+          description: Internal Server Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Actualizar usuario
+      summary: Update routine
       tags:
-      - usuarios
-  /usuarios/email/{email}:
+      - routines
+  /session-exercises:
     get:
       consumes:
       - application/json
-      description: Obtiene un usuario específico por su email
+      description: Get a complete list of session exercises
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.SesionEjercicio'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all session exercises
+      tags:
+      - session-exercises
+    post:
+      consumes:
+      - application/json
+      description: Create a new session exercise in the system
       parameters:
-      - description: Email del usuario
+      - description: Session exercise data
+        in: body
+        name: session_exercise
+        required: true
+        schema:
+          $ref: '#/definitions/models.SesionEjercicio'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.SesionEjercicio'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new session exercise
+      tags:
+      - session-exercises
+  /session-exercises/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a session exercise from the system
+      parameters:
+      - description: Session exercise ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete session exercise
+      tags:
+      - session-exercises
+    get:
+      consumes:
+      - application/json
+      description: Get a specific session exercise by its ID
+      parameters:
+      - description: Session exercise ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SesionEjercicio'
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Session exercise not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get session exercise by ID
+      tags:
+      - session-exercises
+    put:
+      consumes:
+      - application/json
+      description: Update an existing session exercise
+      parameters:
+      - description: Session exercise ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated session exercise data
+        in: body
+        name: session_exercise
+        required: true
+        schema:
+          $ref: '#/definitions/models.SesionEjercicio'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SesionEjercicio'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update session exercise
+      tags:
+      - session-exercises
+  /session-exercises/session/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get all exercises of a specific session
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 'Start date (format: 2006-01-02)'
+        in: query
+        name: start_date
+        type: string
+      - description: 'End date (format: 2006-01-02)'
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.SesionEjercicio'
+            type: array
+        "400":
+          description: Invalid ID format or date format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get session exercises by session ID
+      tags:
+      - session-exercises
+  /sessions:
+    get:
+      consumes:
+      - application/json
+      description: Get a complete list of training sessions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Sesion'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all sessions
+      tags:
+      - sessions
+    post:
+      consumes:
+      - application/json
+      description: Create a new training session in the system
+      parameters:
+      - description: Session data
+        in: body
+        name: session
+        required: true
+        schema:
+          $ref: '#/definitions/models.Sesion'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Sesion'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new session
+      tags:
+      - sessions
+  /sessions/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a session from the system
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete session
+      tags:
+      - sessions
+    get:
+      consumes:
+      - application/json
+      description: Get a specific session by its ID
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Sesion'
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Session not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get session by ID
+      tags:
+      - sessions
+    put:
+      consumes:
+      - application/json
+      description: Update an existing session
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated session data
+        in: body
+        name: session
+        required: true
+        schema:
+          $ref: '#/definitions/models.Sesion'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Sesion'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update session
+      tags:
+      - sessions
+  /sessions/date-range:
+    get:
+      consumes:
+      - application/json
+      description: Get all sessions within a specific date range
+      parameters:
+      - description: 'Start date (ISO format: 2024-01-02T15:04:05Z)'
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: 'End date (ISO format: 2024-01-02T15:04:05Z)'
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Sesion'
+            type: array
+        "400":
+          description: Invalid date format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get sessions by date range
+      tags:
+      - sessions
+  /sessions/user/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get all sessions of a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Sesion'
+            type: array
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get sessions by user
+      tags:
+      - sessions
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Get a complete list of users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Register a new user in the system
+      parameters:
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Create a new user
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user from the system
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Get a specific user by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update an existing user's data
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated user data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - users
+  /users/email/{email}:
+    get:
+      consumes:
+      - application/json
+      description: Get a specific user by their email
+      parameters:
+      - description: User Email
         in: path
         name: email
         required: true
@@ -1998,17 +2432,16 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Usuario'
+            $ref: '#/definitions/models.User'
         "404":
-          description: Usuario no encontrado
+          description: User not found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Obtener usuario por email
+      summary: Get user by email
       tags:
-      - usuarios
+      - users
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

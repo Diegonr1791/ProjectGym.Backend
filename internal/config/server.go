@@ -51,6 +51,7 @@ func (s *Server) setupRoutes() {
 	protected.Use(auth.JWTAuthMiddleware(s.config))
 
 	// Configurar handlers protegidos
+	http.NewRoleHandler(protected, s.container.RoleService)
 	http.NewUsuarioHandler(protected, s.container.UsuarioService)
 	http.NewRoutineHandler(protected, s.container.RutinaService)
 	http.NewGrupoMuscularHandler(protected, s.container.GrupoMuscularService)

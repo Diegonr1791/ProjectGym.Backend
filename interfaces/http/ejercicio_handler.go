@@ -36,7 +36,7 @@ func NewExerciseHandler(r gin.IRouter, uc *usecase.ExerciseUsecase) {
 // @Produce      json
 // @Security     BearerAuth
 // @Success      200  {array}   models.Ejercicio
-// @Failure      500  {object}  domainErrors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
 // @Router       /exercises [get]
 func (h *ExerciseHandler) GetAll(c *gin.Context) {
 	ejercicios, err := h.uc.GetAllExercises()
@@ -55,8 +55,8 @@ func (h *ExerciseHandler) GetAll(c *gin.Context) {
 // @Security     BearerAuth
 // @Param        id   path      int  true  "Exercise ID"
 // @Success      200  {object}  models.Ejercicio
-// @Failure      400  {object}  domainErrors.ErrorResponse "Invalid ID format"
-// @Failure      404  {object}  domainErrors.ErrorResponse "Exercise not found"
+// @Failure      400  {object}  errors.ErrorResponse "Invalid ID format"
+// @Failure      404  {object}  errors.ErrorResponse "Exercise not found"
 // @Router       /exercises/{id} [get]
 func (h *ExerciseHandler) GetByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
@@ -81,8 +81,8 @@ func (h *ExerciseHandler) GetByID(c *gin.Context) {
 // @Security     BearerAuth
 // @Param        exercise body models.Ejercicio true "Exercise data"
 // @Success      201  {object}  models.Ejercicio
-// @Failure      400  {object}  domainErrors.ErrorResponse
-// @Failure      500  {object}  domainErrors.ErrorResponse
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
 // @Router       /exercises [post]
 func (h *ExerciseHandler) Create(c *gin.Context) {
 	var ejercicio models.Ejercicio
@@ -107,9 +107,9 @@ func (h *ExerciseHandler) Create(c *gin.Context) {
 // @Param        id        path   int  true  "Exercise ID"
 // @Param        exercise  body   models.Ejercicio true "Updated exercise data"
 // @Success      200  {object}  models.Ejercicio
-// @Failure      400  {object}  domainErrors.ErrorResponse
-// @Failure      404  {object}  domainErrors.ErrorResponse
-// @Failure      500  {object}  domainErrors.ErrorResponse
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      404  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
 // @Router       /exercises/{id} [put]
 func (h *ExerciseHandler) Update(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
@@ -140,8 +140,8 @@ func (h *ExerciseHandler) Update(c *gin.Context) {
 // @Security     BearerAuth
 // @Param        id  path      int  true  "Exercise ID"
 // @Success      204 "No Content"
-// @Failure      400 {object} domainErrors.ErrorResponse "Invalid ID format"
-// @Failure      500 {object} domainErrors.ErrorResponse "Internal server error"
+// @Failure      400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object} errors.ErrorResponse "Internal server error"
 // @Router       /exercises/{id} [delete]
 func (h *ExerciseHandler) Delete(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
@@ -165,8 +165,8 @@ func (h *ExerciseHandler) Delete(c *gin.Context) {
 // @Security     BearerAuth
 // @Param        id  path      int  true  "Muscle Group ID"
 // @Success      200 {array}   models.Ejercicio
-// @Failure      400 {object}  domainErrors.ErrorResponse "Invalid ID format"
-// @Failure      500 {object}  domainErrors.ErrorResponse "Internal server error"
+// @Failure      400 {object}  errors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object}  errors.ErrorResponse "Internal server error"
 // @Router       /exercises/muscle-group/{id} [get]
 func (h *ExerciseHandler) GetByMuscleGroup(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
