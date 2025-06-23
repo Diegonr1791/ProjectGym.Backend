@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	model "github.com/Diegonr1791/GymBro/internal/domain/models"
-	usecase "github.com/Diegonr1791/GymBro/internal/usecase"
+	domainErrors "github.com/Diegonr1791/GymBro/internal/domain/errors"
+	models "github.com/Diegonr1791/GymBro/internal/domain/models"
+	"github.com/Diegonr1791/GymBro/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,175 +18,205 @@ type SessionHandler struct {
 func NewSessionHandler(r gin.IRouter, uc *usecase.SessionUsecase) {
 	h := &SessionHandler{uc}
 
-	r.POST("/sesion", h.CreateSession)
-	r.GET("/sesion", h.GetAllSessions)
-	r.GET("/sesion/:id", h.GetSessionById)
-	r.PUT("/sesion/:id", h.UpdateSession)
-	r.DELETE("/sesion/:id", h.DeleteSession)
-	r.GET("/sesion/usuario/:id", h.GetSessionsByUserID)
-	r.GET("/sesion/fecha", h.GetSessionsByDateRange)
+	// Grouping session routes under "sessions"
+	sessionRoutes := r.Group("/sessions")
+	{
+		sessionRoutes.GET("", h.GetAll)
+		sessionRoutes.POST("", h.Create)
+		sessionRoutes.GET("/:id", h.GetByID)
+		sessionRoutes.PUT("/:id", h.Update)
+		sessionRoutes.DELETE("/:id", h.Delete)
+		sessionRoutes.GET("/user/:id", h.GetByUserID)
+		sessionRoutes.GET("/date-range", h.GetByDateRange)
+	}
 }
 
-// @Summary Crear nueva sesión
-// @Description Crea una nueva sesión de entrenamiento en el sistema
-// @Tags sesiones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param sesion body model.Sesion true "Datos de la sesión"
-// @Success 201 {object} model.Sesion
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /sesion [post]
-func (h *SessionHandler) CreateSession(c *gin.Context) {
-	var sesion model.Sesion
+// @Summary      Create a new session
+// @Description  Create a new training session in the system
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        session body models.Sesion true "Session data"
+// @Success      201  {object}  models.Sesion
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /sessions [post]
+func (h *SessionHandler) Create(c *gin.Context) {
+	var sesion models.Sesion
 	if err := c.ShouldBindJSON(&sesion); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
+
 	if err := h.uc.CreateSession(&sesion); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusCreated, sesion)
 }
 
-// @Summary Obtener todas las sesiones
-// @Description Obtiene la lista completa de sesiones de entrenamiento
-// @Tags sesiones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {array} model.Sesion
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /sesion [get]
-func (h *SessionHandler) GetAllSessions(c *gin.Context) {
+// @Summary      Get all sessions
+// @Description  Get a complete list of training sessions
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   models.Sesion
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /sessions [get]
+func (h *SessionHandler) GetAll(c *gin.Context) {
 	sesiones, err := h.uc.GetAllSessions()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, sesiones)
 }
 
-// @Summary Obtener sesión por ID
-// @Description Obtiene una sesión específica por su ID
-// @Tags sesiones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la sesión"
-// @Success 200 {object} model.Sesion
-// @Failure 404 {object} map[string]interface{} "Sesión no encontrada"
-// @Router /sesion/{id} [get]
-func (h *SessionHandler) GetSessionById(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	sesion, err := h.uc.GetSessionById(uint(id))
+// @Summary      Get session by ID
+// @Description  Get a specific session by its ID
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Session ID"
+// @Success      200  {object}  models.Sesion
+// @Failure      400  {object}  errors.ErrorResponse "Invalid ID format"
+// @Failure      404  {object}  errors.ErrorResponse "Session not found"
+// @Router       /sessions/{id} [get]
+func (h *SessionHandler) GetByID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Session ID must be a valid number", err))
+		return
+	}
+
+	sesion, err := h.uc.GetSessionByID(uint(id))
+	if err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, sesion)
 }
 
-// @Summary Actualizar sesión
-// @Description Actualiza una sesión existente
-// @Tags sesiones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la sesión"
-// @Param sesion body model.Sesion true "Datos actualizados de la sesión"
-// @Success 200 {object} model.Sesion
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /sesion/{id} [put]
-func (h *SessionHandler) UpdateSession(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	var sesion model.Sesion
-	if err := c.ShouldBindJSON(&sesion); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// @Summary      Update session
+// @Description  Update an existing session
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id       path   int  true  "Session ID"
+// @Param        session  body   models.Sesion true "Updated session data"
+// @Success      200  {object}  models.Sesion
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      404  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /sessions/{id} [put]
+func (h *SessionHandler) Update(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Session ID must be a valid number", err))
 		return
 	}
+
+	var sesion models.Sesion
+	if err := c.ShouldBindJSON(&sesion); err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
+		return
+	}
+
 	sesion.ID = uint(id)
 	if err := h.uc.UpdateSession(&sesion); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, sesion)
 }
 
-// @Summary Eliminar sesión
-// @Description Elimina una sesión del sistema
-// @Tags sesiones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la sesión"
-// @Success 204 "Sesión eliminada"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /sesion/{id} [delete]
-func (h *SessionHandler) DeleteSession(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+// @Summary      Delete session
+// @Description  Delete a session from the system
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path      int  true  "Session ID"
+// @Success      204 "No Content"
+// @Failure      400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object} errors.ErrorResponse "Internal server error"
+// @Router       /sessions/{id} [delete]
+func (h *SessionHandler) Delete(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Session ID must be a valid number", err))
+		return
+	}
+
 	if err := h.uc.DeleteSession(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.Status(http.StatusNoContent)
 }
 
-// @Summary Obtener sesiones por usuario
-// @Description Obtiene todas las sesiones de un usuario específico
-// @Tags sesiones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del usuario"
-// @Success 200 {array} model.Sesion
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /sesion/usuario/{id} [get]
-func (h *SessionHandler) GetSessionsByUserID(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+// @Summary      Get sessions by user
+// @Description  Get all sessions of a specific user
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path      int  true  "User ID"
+// @Success      200 {array}   models.Sesion
+// @Failure      400 {object}  errors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object}  errors.ErrorResponse "Internal server error"
+// @Router       /sessions/user/{id} [get]
+func (h *SessionHandler) GetByUserID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "User ID must be a valid number", err))
+		return
+	}
+
 	sesiones, err := h.uc.GetSessionsByUserID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, sesiones)
 }
 
-// @Summary Obtener sesiones por rango de fechas
-// @Description Obtiene todas las sesiones dentro de un rango de fechas específico
-// @Tags sesiones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param fechaDesde query string true "Fecha desde (formato ISO: 2024-01-02T15:04:05Z)"
-// @Param fechaHasta query string true "Fecha hasta (formato ISO: 2024-01-02T15:04:05Z)"
-// @Success 200 {array} model.Sesion
-// @Failure 400 {object} map[string]interface{} "Formato de fecha inválido"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /sesion/fecha [get]
-func (h *SessionHandler) GetSessionsByDateRange(c *gin.Context) {
-	fechaDesdeStr := c.Query("fechaDesde")
-	fechaHastaStr := c.Query("fechaHasta")
+// @Summary      Get sessions by date range
+// @Description  Get all sessions within a specific date range
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        start_date query string true "Start date (ISO format: 2024-01-02T15:04:05Z)"
+// @Param        end_date   query string true "End date (ISO format: 2024-01-02T15:04:05Z)"
+// @Success      200 {array}   models.Sesion
+// @Failure      400 {object}  errors.ErrorResponse "Invalid date format"
+// @Failure      500 {object}  errors.ErrorResponse "Internal server error"
+// @Router       /sessions/date-range [get]
+func (h *SessionHandler) GetByDateRange(c *gin.Context) {
+	startDateStr := c.Query("start_date")
+	endDateStr := c.Query("end_date")
 
 	// Parse date strings to time.Time (ISO format)
-	fechaDesde, err := time.Parse(time.RFC3339, fechaDesdeStr)
+	startDate, err := time.Parse(time.RFC3339, startDateStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de fecha inválido. Use formato ISO (2024-01-02T15:04:05Z)"})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_DATE_FORMAT", "Invalid start date format. Use ISO format (2024-01-02T15:04:05Z)", err))
 		return
 	}
 
-	fechaHasta, err := time.Parse(time.RFC3339, fechaHastaStr)
+	endDate, err := time.Parse(time.RFC3339, endDateStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de fecha inválido. Use formato ISO (2024-01-02T15:04:05Z)"})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_DATE_FORMAT", "Invalid end date format. Use ISO format (2024-01-02T15:04:05Z)", err))
 		return
 	}
 
-	sesiones, err := h.uc.GetSessionsByDateRange(fechaDesde, fechaHasta)
+	sesiones, err := h.uc.GetSessionsByDateRange(startDate, endDate)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, sesiones)

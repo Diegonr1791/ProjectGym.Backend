@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	model "github.com/Diegonr1791/GymBro/internal/domain/models"
-	usecase "github.com/Diegonr1791/GymBro/internal/usecase"
+	domainErrors "github.com/Diegonr1791/GymBro/internal/domain/errors"
+	models "github.com/Diegonr1791/GymBro/internal/domain/models"
+	"github.com/Diegonr1791/GymBro/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,159 +17,167 @@ type ExerciseHandler struct {
 func NewExerciseHandler(r gin.IRouter, uc *usecase.ExerciseUsecase) {
 	h := &ExerciseHandler{uc}
 
-	r.GET("/ejercicio", h.GetAll)
-	r.GET("/ejercicio/:id", h.GetById)
-	r.POST("/ejercicio", h.Create)
-	r.PUT("/ejercicio/:id", h.Update)
-	r.DELETE("/ejercicio/:id", h.Delete)
-	r.GET("/ejercicio/grupo-muscular/:id", h.GetByMuscleGroup)
+	// Grouping exercise routes under "exercises"
+	exerciseRoutes := r.Group("/exercises")
+	{
+		exerciseRoutes.GET("", h.GetAll)
+		exerciseRoutes.POST("", h.Create)
+		exerciseRoutes.GET("/:id", h.GetByID)
+		exerciseRoutes.PUT("/:id", h.Update)
+		exerciseRoutes.DELETE("/:id", h.Delete)
+		exerciseRoutes.GET("/muscle-group/:id", h.GetByMuscleGroup)
+	}
 }
 
-// @Summary Obtener todos los ejercicios
-// @Description Obtiene la lista completa de ejercicios
-// @Tags ejercicios
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {array} model.Ejercicio
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /ejercicio [get]
+// @Summary      Get all exercises
+// @Description  Get a complete list of exercises
+// @Tags         exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   models.Ejercicio
+// @Failure      500  {object}  domainErrors.ErrorResponse
+// @Router       /exercises [get]
 func (h *ExerciseHandler) GetAll(c *gin.Context) {
-	ejercicios, err := h.uc.GetAll()
+	ejercicios, err := h.uc.GetAllExercises()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, ejercicios)
 }
 
-// @Summary Obtener ejercicio por ID
-// @Description Obtiene un ejercicio específico por su ID
-// @Tags ejercicios
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del ejercicio"
-// @Success 200 {object} model.Ejercicio
-// @Failure 400 {object} map[string]interface{} "ID inválido"
-// @Failure 404 {object} map[string]interface{} "Ejercicio no encontrado"
-// @Router /ejercicio/{id} [get]
-func (h *ExerciseHandler) GetById(c *gin.Context) {
-	id := c.Param("id")
-	idUint, err := strconv.ParseUint(id, 10, 64)
+// @Summary      Get exercise by ID
+// @Description  Get a specific exercise by its ID
+// @Tags         exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Exercise ID"
+// @Success      200  {object}  models.Ejercicio
+// @Failure      400  {object}  domainErrors.ErrorResponse "Invalid ID format"
+// @Failure      404  {object}  domainErrors.ErrorResponse "Exercise not found"
+// @Router       /exercises/{id} [get]
+func (h *ExerciseHandler) GetByID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Exercise ID must be a valid number", err))
 		return
 	}
 
-	ejercicio, err := h.uc.GetById(uint(idUint))
+	ejercicio, err := h.uc.GetExerciseByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Ejercicio no encontrado"})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, ejercicio)
 }
 
-// @Summary Crear nuevo ejercicio
-// @Description Crea un nuevo ejercicio en el sistema
-// @Tags ejercicios
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param ejercicio body model.Ejercicio true "Datos del ejercicio"
-// @Success 201 {object} model.Ejercicio
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /ejercicio [post]
+// @Summary      Create a new exercise
+// @Description  Create a new exercise in the system
+// @Tags         exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        exercise body models.Ejercicio true "Exercise data"
+// @Success      201  {object}  models.Ejercicio
+// @Failure      400  {object}  domainErrors.ErrorResponse
+// @Failure      500  {object}  domainErrors.ErrorResponse
+// @Router       /exercises [post]
 func (h *ExerciseHandler) Create(c *gin.Context) {
-	var ejercicio model.Ejercicio
+	var ejercicio models.Ejercicio
 	if err := c.ShouldBindJSON(&ejercicio); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
-	if err := h.uc.Create(&ejercicio); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	if err := h.uc.CreateExercise(&ejercicio); err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusCreated, ejercicio)
 }
 
-// @Summary Actualizar ejercicio
-// @Description Actualiza un ejercicio existente
-// @Tags ejercicios
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del ejercicio"
-// @Param ejercicio body model.Ejercicio true "Datos actualizados del ejercicio"
-// @Success 200 {object} model.Ejercicio
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /ejercicio/{id} [put]
+// @Summary      Update exercise
+// @Description  Update an existing exercise
+// @Tags         exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id        path   int  true  "Exercise ID"
+// @Param        exercise  body   models.Ejercicio true "Updated exercise data"
+// @Success      200  {object}  models.Ejercicio
+// @Failure      400  {object}  domainErrors.ErrorResponse
+// @Failure      404  {object}  domainErrors.ErrorResponse
+// @Failure      500  {object}  domainErrors.ErrorResponse
+// @Router       /exercises/{id} [put]
 func (h *ExerciseHandler) Update(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	var ejercicioUpdate model.Ejercicio
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Exercise ID must be a valid number", err))
+		return
+	}
 
+	var ejercicioUpdate models.Ejercicio
 	if err := c.ShouldBindJSON(&ejercicioUpdate); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
 
 	ejercicioUpdate.ID = uint(id)
-	if err := h.uc.Update(&ejercicioUpdate); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.uc.UpdateExercise(&ejercicioUpdate); err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, ejercicioUpdate)
 }
 
-// @Summary Eliminar ejercicio
-// @Description Elimina un ejercicio del sistema
-// @Tags ejercicios
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del ejercicio"
-// @Success 204 "Ejercicio eliminado"
-// @Failure 400 {object} map[string]interface{} "ID inválido"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /ejercicio/{id} [delete]
+// @Summary      Delete exercise
+// @Description  Delete an exercise from the system
+// @Tags         exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path      int  true  "Exercise ID"
+// @Success      204 "No Content"
+// @Failure      400 {object} domainErrors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object} domainErrors.ErrorResponse "Internal server error"
+// @Router       /exercises/{id} [delete]
 func (h *ExerciseHandler) Delete(c *gin.Context) {
-	id := c.Param("id")
-	idUint, err := strconv.ParseUint(id, 10, 64)
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Exercise ID must be a valid number", err))
 		return
 	}
-	if err := h.uc.Delete(uint(idUint)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	if err := h.uc.DeleteExercise(uint(id)); err != nil {
+		c.Error(err)
 		return
 	}
-	c.JSON(http.StatusNoContent, nil)
+	c.Status(http.StatusNoContent)
 }
 
-// @Summary Obtener ejercicios por grupo muscular
-// @Description Obtiene todos los ejercicios de un grupo muscular específico
-// @Tags ejercicios
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del grupo muscular"
-// @Success 200 {array} model.Ejercicio
-// @Failure 400 {object} map[string]interface{} "ID inválido"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /ejercicio/grupo-muscular/{id} [get]
+// @Summary      Get exercises by muscle group
+// @Description  Get all exercises of a specific muscle group
+// @Tags         exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path      int  true  "Muscle Group ID"
+// @Success      200 {array}   models.Ejercicio
+// @Failure      400 {object}  domainErrors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object}  domainErrors.ErrorResponse "Internal server error"
+// @Router       /exercises/muscle-group/{id} [get]
 func (h *ExerciseHandler) GetByMuscleGroup(c *gin.Context) {
-	id := c.Param("id")
-	idUint, err := strconv.ParseUint(id, 10, 64)
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Muscle group ID must be a valid number", err))
 		return
 	}
 
-	ejercicios, err := h.uc.GetByMuscleGroup(uint(idUint))
+	ejercicios, err := h.uc.GetExercisesByMuscleGroup(uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, ejercicios)

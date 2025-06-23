@@ -1,4 +1,4 @@
-package model
+package models
 
 type GrupoMuscular struct {
 	ID     uint   `gorm:"primaryKey" json:"id"`

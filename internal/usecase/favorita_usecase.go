@@ -1,38 +1,70 @@
 package usecase
 
 import (
-	model "github.com/Diegonr1791/GymBro/internal/domain/models"
-	repository "github.com/Diegonr1791/GymBro/internal/domain/repositories"
+	domainErrors "github.com/Diegonr1791/GymBro/internal/domain/errors"
+	models "github.com/Diegonr1791/GymBro/internal/domain/models"
+	repositories "github.com/Diegonr1791/GymBro/internal/domain/repositories"
+	"github.com/pkg/errors"
 )
 
-type FavoritaUsecase struct {
-	repo repository.FavoritaRepository
+type FavoriteUsecase struct {
+	repo repositories.FavoritaRepository
 }
 
-func NewFavoritaUsecase(repo repository.FavoritaRepository) *FavoritaUsecase {
-	return &FavoritaUsecase{repo}
+func NewFavoriteUsecase(repo repositories.FavoritaRepository) *FavoriteUsecase {
+	return &FavoriteUsecase{repo}
 }
 
-func (uc *FavoritaUsecase) ObtenerTodos() ([]model.Favorita, error) {
-	return uc.repo.GetAll()
+func (uc *FavoriteUsecase) GetAll() ([]models.Favorita, error) {
+	favoritas, err := uc.repo.GetAll()
+	if err != nil {
+		return nil, domainErrors.NewAppError(500, "DB_GET_ALL_FAVORITES_FAILED", "Failed to get all favorites from database", err)
+	}
+	return favoritas, nil
 }
 
-func (uc *FavoritaUsecase) ObtenerPorID(id uint) (*model.Favorita, error) {
-	return uc.repo.GetByID(id)
+func (uc *FavoriteUsecase) GetByID(id uint) (*models.Favorita, error) {
+	favorita, err := uc.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, domainErrors.ErrNotFound) {
+			return nil, domainErrors.ErrNotFound
+		}
+		return nil, domainErrors.NewAppError(500, "DB_GET_FAVORITE_FAILED", "Failed to get favorite from database", err)
+	}
+	return favorita, nil
 }
 
-func (uc *FavoritaUsecase) Crear(favorita *model.Favorita) error {
-	return uc.repo.Create(favorita)
+func (uc *FavoriteUsecase) Create(favorita *models.Favorita) error {
+	if err := uc.repo.Create(favorita); err != nil {
+		return domainErrors.NewAppError(500, "DB_CREATE_FAVORITE_FAILED", "Failed to create favorite in database", err)
+	}
+	return nil
 }
 
-func (uc *FavoritaUsecase) Actualizar(favorita *model.Favorita) error {
-	return uc.repo.Update(favorita)
+func (uc *FavoriteUsecase) Update(favorita *models.Favorita) error {
+	if _, err := uc.repo.GetByID(favorita.ID); err != nil {
+		if errors.Is(err, domainErrors.ErrNotFound) {
+			return domainErrors.ErrNotFound
+		}
+		return domainErrors.NewAppError(500, "DB_UPDATE_FAVORITE_FAILED", "Failed to verify favorite existence", err)
+	}
+	if err := uc.repo.Update(favorita); err != nil {
+		return domainErrors.NewAppError(500, "DB_UPDATE_FAVORITE_FAILED", "Failed to update favorite in database", err)
+	}
+	return nil
 }
 
-func (uc *FavoritaUsecase) Eliminar(id uint) error {
-	return uc.repo.Delete(id)
+func (uc *FavoriteUsecase) Delete(id uint) error {
+	if err := uc.repo.Delete(id); err != nil {
+		return domainErrors.NewAppError(500, "DB_DELETE_FAVORITE_FAILED", "Failed to delete favorite from database", err)
+	}
+	return nil
 }
 
-func (uc *FavoritaUsecase) ObtenerFavoritasPorUsuario(usuarioID uint) ([]model.Favorita, error) {
-	return uc.repo.GetFavoritasByUsuarioID(usuarioID)
+func (uc *FavoriteUsecase) GetByUserID(userID uint) ([]models.Favorita, error) {
+	favoritas, err := uc.repo.GetFavoritasByUsuarioID(userID)
+	if err != nil {
+		return nil, domainErrors.NewAppError(500, "DB_GET_FAVORITES_BY_USER_FAILED", "Failed to get favorites by user from database", err)
+	}
+	return favoritas, nil
 }

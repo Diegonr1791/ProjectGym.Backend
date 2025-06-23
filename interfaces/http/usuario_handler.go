@@ -4,166 +4,184 @@ import (
 	"net/http"
 	"strconv"
 
-	model "github.com/Diegonr1791/GymBro/internal/domain/models"
-	usuario "github.com/Diegonr1791/GymBro/internal/usecase"
+	domainErrors "github.com/Diegonr1791/GymBro/internal/domain/errors"
+	models "github.com/Diegonr1791/GymBro/internal/domain/models"
+	"github.com/Diegonr1791/GymBro/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
 
 type UsuarioHandler struct {
-	usecase *usuario.UsuarioUsecase
+	usecase *usecase.UsuarioUsecase
 }
 
-func NewUsuarioHandler(r gin.IRouter, usecase *usuario.UsuarioUsecase) {
+func NewUsuarioHandler(r gin.IRouter, usecase *usecase.UsuarioUsecase) {
 	handler := &UsuarioHandler{usecase}
 
-	r.GET("/usuarios", handler.ObtenerTodos)
-	r.GET("/usuarios/:id", handler.Obtener)
-	r.GET("/usuarios/email/:email", handler.ObtenerUsuarioPorEmail)
-	r.POST("/usuarios", handler.Registrar)
-	r.PUT("/usuarios/:id", handler.Actualizar)
-	r.DELETE("/usuarios/:id", handler.Eliminar)
+	// Grouping user routes under "users"
+	userRoutes := r.Group("/users")
+	{
+		userRoutes.GET("", handler.GetAll)
+		userRoutes.POST("", handler.Create)
+		userRoutes.GET("/:id", handler.GetByID)
+		userRoutes.PUT("/:id", handler.Update)
+		userRoutes.DELETE("/:id", handler.Delete)
+		userRoutes.GET("/email/:email", handler.GetByEmail)
+	}
 }
 
-// @Summary Registrar nuevo usuario
-// @Description Registra un nuevo usuario en el sistema
-// @Tags usuarios
-// @Accept json
-// @Produce json
-// @Param usuario body model.Usuario true "Datos del usuario"
-// @Success 201 {object} model.Usuario
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /usuarios [post]
-func (h *UsuarioHandler) Registrar(c *gin.Context) {
-	var u model.Usuario
+// @Summary      Create a new user
+// @Description  Register a new user in the system
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        user body models.Usuario true "User data"
+// @Success      201  {object}  models.Usuario
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      409  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /users [post]
+func (h *UsuarioHandler) Create(c *gin.Context) {
+	var u models.Usuario
 	if err := c.ShouldBindJSON(&u); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
 
-	if err := h.usecase.RegistrarUsuario(&u); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al registrar"})
+	if err := h.usecase.CreateUsuario(&u); err != nil {
+		c.Error(err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, u)
 }
 
-// @Summary Obtener todos los usuarios
-// @Description Obtiene la lista completa de usuarios
-// @Tags usuarios
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {array} model.Usuario
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /usuarios [get]
-func (h *UsuarioHandler) ObtenerTodos(c *gin.Context) {
-	usuarios, err := h.usecase.ObtenerTodosUsuarios()
+// @Summary      Get all users
+// @Description  Get a complete list of users
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   models.Usuario
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /users [get]
+func (h *UsuarioHandler) GetAll(c *gin.Context) {
+	usuarios, err := h.usecase.GetAllUsuarios()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener usuarios"})
+		c.Error(err)
 		return
 	}
 
 	c.JSON(http.StatusOK, usuarios)
 }
 
-// @Summary Obtener usuario por ID
-// @Description Obtiene un usuario específico por su ID
-// @Tags usuarios
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del usuario"
-// @Success 200 {object} model.Usuario
-// @Failure 404 {object} map[string]interface{} "Usuario no encontrado"
-// @Router /usuarios/{id} [get]
-func (h *UsuarioHandler) Obtener(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-
-	usuario, err := h.usecase.ObtenerUsuario(uint(id))
+// @Summary      Get user by ID
+// @Description  Get a specific user by their ID
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  models.Usuario
+// @Failure      400  {object}  errors.ErrorResponse "Invalid ID format"
+// @Failure      404  {object}  errors.ErrorResponse "User not found"
+// @Router       /users/{id} [get]
+func (h *UsuarioHandler) GetByID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Usuario no encontrado"})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "User ID must be a valid number", err))
+		return
+	}
+
+	usuario, err := h.usecase.GetUsuarioByID(uint(id))
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
 	c.JSON(http.StatusOK, usuario)
 }
 
-// @Summary Obtener usuario por email
-// @Description Obtiene un usuario específico por su email
-// @Tags usuarios
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param email path string true "Email del usuario"
-// @Success 200 {object} model.Usuario
-// @Failure 404 {object} map[string]interface{} "Usuario no encontrado"
-// @Router /usuarios/email/{email} [get]
-func (h *UsuarioHandler) ObtenerUsuarioPorEmail(c *gin.Context) {
+// @Summary      Get user by email
+// @Description  Get a specific user by their email
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        email path     string true "User Email"
+// @Success      200   {object} models.Usuario
+// @Failure      404   {object} errors.ErrorResponse "User not found"
+// @Router       /users/email/{email} [get]
+func (h *UsuarioHandler) GetByEmail(c *gin.Context) {
 	email := c.Param("email")
 
-	usuario, err := h.usecase.ObtenerUsuarioPorEmail(email)
+	usuario, err := h.usecase.GetUsuarioByEmail(email)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Usuario no encontrado"})
+		c.Error(err)
 		return
 	}
 
 	c.JSON(http.StatusOK, usuario)
 }
 
-// @Summary Actualizar usuario
-// @Description Actualiza los datos de un usuario existente
-// @Tags usuarios
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del usuario"
-// @Param usuario body model.Usuario true "Datos actualizados del usuario"
-// @Success 200 {object} model.Usuario
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 404 {object} map[string]interface{} "Usuario no encontrado"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /usuarios/{id} [put]
-func (h *UsuarioHandler) Actualizar(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-
-	_, err := h.usecase.ObtenerUsuario(uint(id))
+// @Summary      Update user
+// @Description  Update an existing user's data
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "User ID"
+// @Param        user body      models.Usuario true "Updated user data"
+// @Success      200  {object}  models.Usuario
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      404  {object}  errors.ErrorResponse
+// @Failure      409  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /users/{id} [put]
+func (h *UsuarioHandler) Update(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Usuario no encontrado"})
-		return
-	}
-	var u model.Usuario
-	if err := c.ShouldBindJSON(&u); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "User ID must be a valid number", err))
 		return
 	}
 
-	if err := h.usecase.ActualizarUsuario(&u); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar"})
+	var u models.Usuario
+	if err := c.ShouldBindJSON(&u); err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
+		return
+	}
+
+	u.ID = uint(id)
+
+	if err := h.usecase.UpdateUsuario(&u); err != nil {
+		c.Error(err)
 		return
 	}
 
 	c.JSON(http.StatusOK, u)
 }
 
-// @Summary Eliminar usuario
-// @Description Elimina un usuario del sistema
-// @Tags usuarios
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del usuario"
-// @Success 200 {object} map[string]interface{} "Usuario eliminado correctamente"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /usuarios/{id} [delete]
-func (h *UsuarioHandler) Eliminar(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-
-	if err := h.usecase.EliminarUsuario(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar"})
+// @Summary      Delete user
+// @Description  Delete a user from the system
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path      int  true  "User ID"
+// @Success      204 "No Content"
+// @Failure      400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object} errors.ErrorResponse "Internal server error"
+// @Router       /users/{id} [delete]
+func (h *UsuarioHandler) Delete(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "User ID must be a valid number", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Usuario eliminado correctamente"})
+	if err := h.usecase.DeleteUsuario(uint(id)); err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }

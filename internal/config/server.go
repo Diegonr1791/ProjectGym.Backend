@@ -2,8 +2,8 @@ package config
 
 import (
 	http "github.com/Diegonr1791/GymBro/interfaces/http"
+	"github.com/Diegonr1791/GymBro/interfaces/http/middleware"
 	"github.com/Diegonr1791/GymBro/internal/auth"
-	"github.com/Diegonr1791/GymBro/internal/usecase"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -19,6 +19,9 @@ type Server struct {
 // NewServer crea una nueva instancia del servidor
 func NewServer(container *Container, cfg *Config) *Server {
 	router := gin.Default()
+
+	// Registrar el middleware de errores globalmente.
+	router.Use(middleware.ErrorHandler())
 
 	server := &Server{
 		router:    router,
@@ -40,11 +43,8 @@ func (s *Server) setupRoutes() {
 	// Grupo principal para la API versionada
 	apiV1 := s.router.Group("/api/v1")
 
-	// Inicializar el use case de refresh token aquí, donde tenemos la config
-	refreshTokenUsecase := usecase.NewRefreshTokenUsecase(s.container.RefreshTokenRepo, s.container.UsuarioRepo, s.config)
-
 	// Rutas públicas (sin autenticación) - ahora cuelgan de /api/v1
-	http.NewAuthHandler(apiV1, s.container.UsuarioService, refreshTokenUsecase, s.config)
+	http.NewAuthHandler(apiV1, s.container.UsuarioService, s.container.RefreshTokenService, s.config)
 
 	// Grupo de rutas protegidas con JWT - ahora cuelgan de /api/v1
 	protected := apiV1.Group("/")
@@ -52,11 +52,11 @@ func (s *Server) setupRoutes() {
 
 	// Configurar handlers protegidos
 	http.NewUsuarioHandler(protected, s.container.UsuarioService)
-	http.NewRutinaHandler(protected, s.container.RutinaService)
+	http.NewRoutineHandler(protected, s.container.RutinaService)
 	http.NewGrupoMuscularHandler(protected, s.container.GrupoMuscularService)
-	http.NewRutinaGMHandler(protected, s.container.RutinaGMService)
-	http.NewFavoritaHandler(protected, s.container.FavoritaService)
-	http.NewMedicionHandler(protected, s.container.MedicionService)
+	http.NewRoutineMuscleGroupHandler(protected, s.container.RutinaGMService)
+	http.NewFavoriteHandler(protected, s.container.FavoritaService)
+	http.NewMeasurementHandler(protected, s.container.MedicionService)
 	http.NewTypeExerciseHandler(protected, s.container.TipoEjercicioService)
 	http.NewExerciseHandler(protected, s.container.EjercicioService)
 	http.NewSessionHandler(protected, s.container.SesionService)

@@ -1,34 +1,64 @@
 package usecase
 
 import (
-	model "github.com/Diegonr1791/GymBro/internal/domain/models"
-	repository "github.com/Diegonr1791/GymBro/internal/domain/repositories"
+	domainErrors "github.com/Diegonr1791/GymBro/internal/domain/errors"
+	models "github.com/Diegonr1791/GymBro/internal/domain/models"
+	repositories "github.com/Diegonr1791/GymBro/internal/domain/repositories"
+	"github.com/pkg/errors"
 )
 
-type RutinaService struct {
-	repo repository.RutinaRepository
+type RutinaUsecase struct {
+	repo repositories.RutinaRepository
 }
 
-func NewRutinaUseCase(repo repository.RutinaRepository) *RutinaService {
-	return &RutinaService{repo}
+func NewRutinaUsecase(repo repositories.RutinaRepository) *RutinaUsecase {
+	return &RutinaUsecase{repo}
 }
 
-func (s *RutinaService) Obtener() ([]model.Rutina, error) {
-	return s.repo.GetAll()
+func (uc *RutinaUsecase) GetAllRoutines() ([]models.Rutina, error) {
+	rutinas, err := uc.repo.GetAll()
+	if err != nil {
+		return nil, domainErrors.NewAppError(500, "DB_GET_ALL_ROUTINES_FAILED", "Failed to get all routines from database", err)
+	}
+	return rutinas, nil
 }
 
-func (s *RutinaService) Crear(rutina *model.Rutina) error {
-	return s.repo.Create(rutina)
+func (uc *RutinaUsecase) GetRoutineByID(id uint) (*models.Rutina, error) {
+	rutina, err := uc.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, domainErrors.ErrNotFound) {
+			return nil, domainErrors.ErrNotFound
+		}
+		return nil, domainErrors.NewAppError(500, "DB_GET_ROUTINE_FAILED", "Failed to get routine from database", err)
+	}
+	return rutina, nil
 }
 
-func (s *RutinaService) ObtenerPorID(id uint) (*model.Rutina, error) {
-	return s.repo.GetByID(id)
+func (uc *RutinaUsecase) CreateRoutine(rutina *models.Rutina) error {
+	if err := uc.repo.Create(rutina); err != nil {
+		return domainErrors.NewAppError(500, "DB_CREATE_ROUTINE_FAILED", "Failed to create routine in database", err)
+	}
+	return nil
 }
 
-func (s *RutinaService) Actualizar(rutina *model.Rutina) error {
-	return s.repo.Update(rutina)
+func (uc *RutinaUsecase) UpdateRoutine(rutina *models.Rutina) error {
+	// Verify routine exists before updating
+	if _, err := uc.repo.GetByID(rutina.ID); err != nil {
+		if errors.Is(err, domainErrors.ErrNotFound) {
+			return domainErrors.ErrNotFound
+		}
+		return domainErrors.NewAppError(500, "DB_UPDATE_ROUTINE_FAILED", "Failed to verify routine existence", err)
+	}
+
+	if err := uc.repo.Update(rutina); err != nil {
+		return domainErrors.NewAppError(500, "DB_UPDATE_ROUTINE_FAILED", "Failed to update routine in database", err)
+	}
+	return nil
 }
 
-func (s *RutinaService) Eliminar(id uint) error {
-	return s.repo.Delete(id)
+func (uc *RutinaUsecase) DeleteRoutine(id uint) error {
+	if err := uc.repo.Delete(id); err != nil {
+		return domainErrors.NewAppError(500, "DB_DELETE_ROUTINE_FAILED", "Failed to delete routine from database", err)
+	}
+	return nil
 }

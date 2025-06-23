@@ -4,149 +4,173 @@ import (
 	"net/http"
 	"strconv"
 
-	model "github.com/Diegonr1791/GymBro/internal/domain/models"
-	usecase "github.com/Diegonr1791/GymBro/internal/usecase"
+	domainErrors "github.com/Diegonr1791/GymBro/internal/domain/errors"
+	models "github.com/Diegonr1791/GymBro/internal/domain/models"
+	"github.com/Diegonr1791/GymBro/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
 
-type FavoritaHandler struct {
-	uc *usecase.FavoritaUsecase
+type FavoriteHandler struct {
+	uc *usecase.FavoriteUsecase
 }
 
-func NewFavoritaHandler(r gin.IRouter, uc *usecase.FavoritaUsecase) {
-	h := &FavoritaHandler{uc}
+func NewFavoriteHandler(r gin.IRouter, uc *usecase.FavoriteUsecase) {
+	h := &FavoriteHandler{uc}
 
-	r.POST("/favorita", h.Crear)
-	r.GET("/favorita", h.ObtenerTodos)
-	r.GET("/favorita/:id", h.ObtenerPorID)
-	r.GET("/favorita/usuario/:usuario_id", h.ObtenerFavoritasPorUsuario)
-	r.PUT("/favorita/:id", h.Actualizar)
-	r.DELETE("/favorita/:id", h.Eliminar)
+	favoriteRoutes := r.Group("/favorites")
+	{
+		favoriteRoutes.POST("", h.Create)
+		favoriteRoutes.GET("", h.GetAll)
+		favoriteRoutes.GET("/:id", h.GetByID)
+		favoriteRoutes.GET("/user/:user_id", h.GetByUserID)
+		favoriteRoutes.PUT("/:id", h.Update)
+		favoriteRoutes.DELETE("/:id", h.Delete)
+	}
 }
 
-// @Summary Crear nueva favorita
-// @Description Crea una nueva favorita en el sistema
-// @Tags favoritas
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param favorita body model.Favorita true "Datos de la favorita"
-// @Success 201 {object} model.Favorita
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /favorita [post]
-func (h *FavoritaHandler) Crear(c *gin.Context) {
-	var favorita model.Favorita
+// @Summary      Create a new favorite
+// @Description  Create a new favorite in the system
+// @Tags         favorites
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        favorite body models.Favorita true "Favorite data"
+// @Success      201  {object}  models.Favorita
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /favorites [post]
+func (h *FavoriteHandler) Create(c *gin.Context) {
+	var favorita models.Favorita
 	if err := c.ShouldBindJSON(&favorita); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
-	if err := h.uc.Crear(&favorita); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.uc.Create(&favorita); err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusCreated, favorita)
 }
 
-// @Summary Obtener todas las favoritas
-// @Description Obtiene la lista completa de favoritas
-// @Tags favoritas
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {array} model.Favorita
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /favorita [get]
-func (h *FavoritaHandler) ObtenerTodos(c *gin.Context) {
-	favoritas, err := h.uc.ObtenerTodos()
+// @Summary      Get all favorites
+// @Description  Get a complete list of favorites
+// @Tags         favorites
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   models.Favorita
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /favorites [get]
+func (h *FavoriteHandler) GetAll(c *gin.Context) {
+	favoritas, err := h.uc.GetAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, favoritas)
 }
 
-// @Summary Obtener favorita por ID
-// @Description Obtiene una favorita específica por su ID
-// @Tags favoritas
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la favorita"
-// @Success 200 {object} model.Favorita
-// @Failure 404 {object} map[string]interface{} "Favorita no encontrada"
-// @Router /favorita/{id} [get]
-func (h *FavoritaHandler) ObtenerPorID(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	favorita, err := h.uc.ObtenerPorID(uint(id))
+// @Summary      Get favorite by ID
+// @Description  Get a specific favorite by its ID
+// @Tags         favorites
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Favorite ID"
+// @Success      200  {object}  models.Favorita
+// @Failure      400  {object}  errors.ErrorResponse "Invalid ID format"
+// @Failure      404  {object}  errors.ErrorResponse "Favorite not found"
+// @Router       /favorites/{id} [get]
+func (h *FavoriteHandler) GetByID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Favorite ID must be a valid number", err))
+		return
+	}
+	favorita, err := h.uc.GetByID(uint(id))
+	if err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, favorita)
 }
 
-// @Summary Actualizar favorita
-// @Description Actualiza una favorita existente
-// @Tags favoritas
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la favorita"
-// @Param favorita body model.Favorita true "Datos actualizados de la favorita"
-// @Success 200 {object} model.Favorita
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /favorita/{id} [put]
-func (h *FavoritaHandler) Actualizar(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	var favorita model.Favorita
+// @Summary      Update favorite
+// @Description  Update an existing favorite
+// @Tags         favorites
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id       path   int  true  "Favorite ID"
+// @Param        favorite body   models.Favorita true "Updated favorite data"
+// @Success      200  {object}  models.Favorita
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      404  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /favorites/{id} [put]
+func (h *FavoriteHandler) Update(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Favorite ID must be a valid number", err))
+		return
+	}
+	var favorita models.Favorita
 	if err := c.ShouldBindJSON(&favorita); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
 	favorita.ID = uint(id)
-	if err := h.uc.Actualizar(&favorita); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.uc.Update(&favorita); err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, favorita)
 }
 
-// @Summary Eliminar favorita
-// @Description Elimina una favorita del sistema
-// @Tags favoritas
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la favorita"
-// @Success 204 "Favorita eliminada"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /favorita/{id} [delete]
-func (h *FavoritaHandler) Eliminar(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	if err := h.uc.Eliminar(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// @Summary      Delete favorite
+// @Description  Delete a favorite from the system
+// @Tags         favorites
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path      int  true  "Favorite ID"
+// @Success      204 "No Content"
+// @Failure      400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object} errors.ErrorResponse "Internal server error"
+// @Router       /favorites/{id} [delete]
+func (h *FavoriteHandler) Delete(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Favorite ID must be a valid number", err))
+		return
+	}
+	if err := h.uc.Delete(uint(id)); err != nil {
+		c.Error(err)
 		return
 	}
 	c.Status(http.StatusNoContent)
 }
 
-// @Summary Obtener favoritas por usuario
-// @Description Obtiene todas las favoritas de un usuario específico
-// @Tags favoritas
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param usuario_id path int true "ID del usuario"
-// @Success 200 {array} model.Favorita
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /favorita/usuario/{usuario_id} [get]
-func (h *FavoritaHandler) ObtenerFavoritasPorUsuario(c *gin.Context) {
-	usuarioID, _ := strconv.Atoi(c.Param("usuario_id"))
-	favoritas, err := h.uc.ObtenerFavoritasPorUsuario(uint(usuarioID))
+// @Summary      Get favorites by user
+// @Description  Get all favorites of a specific user
+// @Tags         favorites
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        user_id  path      int  true  "User ID"
+// @Success      200 {array}   models.Favorita
+// @Failure      400 {object}  errors.ErrorResponse "Invalid user ID format"
+// @Failure      500 {object}  errors.ErrorResponse "Internal server error"
+// @Router       /favorites/user/{user_id} [get]
+func (h *FavoriteHandler) GetByUserID(c *gin.Context) {
+	userID, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_USER_ID", "User ID must be a valid number", err))
+		return
+	}
+	favoritas, err := h.uc.GetByUserID(uint(userID))
+	if err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, favoritas)

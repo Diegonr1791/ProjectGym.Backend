@@ -4,163 +4,184 @@ import (
 	"net/http"
 	"strconv"
 
-	model "github.com/Diegonr1791/GymBro/internal/domain/models"
-	rutinaGM "github.com/Diegonr1791/GymBro/internal/usecase"
+	domainErrors "github.com/Diegonr1791/GymBro/internal/domain/errors"
+	models "github.com/Diegonr1791/GymBro/internal/domain/models"
+	"github.com/Diegonr1791/GymBro/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
 
-type RutinaGMHandler struct {
-	usecase *rutinaGM.RutinaGrupoMuscularUsecase
+type RoutineMuscleGroupHandler struct {
+	usecase *usecase.RoutineMuscleGroupUsecase
 }
 
-func NewRutinaGMHandler(router gin.IRouter, uc *rutinaGM.RutinaGrupoMuscularUsecase) {
-	handler := &RutinaGMHandler{uc}
+func NewRoutineMuscleGroupHandler(router gin.IRouter, uc *usecase.RoutineMuscleGroupUsecase) {
+	handler := &RoutineMuscleGroupHandler{uc}
 
-	router.POST("/rutina-gm", handler.Crear)
-	router.GET("/rutina-gm", handler.ObtenerTodos)
-	router.GET("/rutina-gm/:id", handler.ObtenerPorID)
-	router.PUT("/rutina-gm/:id", handler.Actualizar)
-	router.DELETE("/rutina-gm/:id", handler.Eliminar)
-	router.GET("/rutina/grupo-muscular/:id", handler.ObtenerGruposMuscularesPorRutina)
+	routineMuscleGroupRoutes := router.Group("/routine-muscle-groups")
+	{
+		routineMuscleGroupRoutes.POST("", handler.Create)
+		routineMuscleGroupRoutes.GET("", handler.GetAll)
+		routineMuscleGroupRoutes.GET("/:id", handler.GetByID)
+		routineMuscleGroupRoutes.PUT("/:id", handler.Update)
+		routineMuscleGroupRoutes.DELETE("/:id", handler.Delete)
+		routineMuscleGroupRoutes.GET("/routine/:id/muscle-groups", handler.GetMuscleGroupsByRoutine)
+	}
 }
 
-// @Summary Crear nueva rutina de grupo muscular
-// @Description Crea una nueva rutina de grupo muscular en el sistema
-// @Tags rutinas-grupo-muscular
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param rutina body model.RutinaGrupoMuscular true "Datos de la rutina de grupo muscular"
-// @Success 201 {object} model.RutinaGrupoMuscular
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /rutina-gm [post]
-func (h *RutinaGMHandler) Crear(c *gin.Context) {
-	var rutinaGM model.RutinaGrupoMuscular
+// @Summary      Create a new routine muscle group
+// @Description  Create a new routine muscle group in the system
+// @Tags         routine-muscle-groups
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        routine_muscle_group body models.RutinaGrupoMuscular true "Routine muscle group data"
+// @Success      201  {object}  models.RutinaGrupoMuscular
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /routine-muscle-groups [post]
+func (h *RoutineMuscleGroupHandler) Create(c *gin.Context) {
+	var rutinaGM models.RutinaGrupoMuscular
 	if err := c.ShouldBindJSON(&rutinaGM); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
 
-	if err := h.usecase.Crear(&rutinaGM); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear rutina grupo muscular"})
+	if err := h.usecase.Create(&rutinaGM); err != nil {
+		c.Error(err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, rutinaGM)
 }
 
-// @Summary Obtener todas las rutinas de grupo muscular
-// @Description Obtiene la lista completa de rutinas de grupo muscular
-// @Tags rutinas-grupo-muscular
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {array} model.RutinaGrupoMuscular
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /rutina-gm [get]
-func (h *RutinaGMHandler) ObtenerTodos(c *gin.Context) {
-	rutinasGM, err := h.usecase.ObtenerTodos()
+// @Summary      Get all routine muscle groups
+// @Description  Get a complete list of routine muscle groups
+// @Tags         routine-muscle-groups
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   models.RutinaGrupoMuscular
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /routine-muscle-groups [get]
+func (h *RoutineMuscleGroupHandler) GetAll(c *gin.Context) {
+	rutinasGM, err := h.usecase.GetAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener rutinas grupo muscular"})
+		c.Error(err)
 		return
 	}
 
 	c.JSON(http.StatusOK, rutinasGM)
 }
 
-// @Summary Obtener rutina de grupo muscular por ID
-// @Description Obtiene una rutina de grupo muscular específica por su ID
-// @Tags rutinas-grupo-muscular
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la rutina de grupo muscular"
-// @Success 200 {object} model.RutinaGrupoMuscular
-// @Failure 404 {object} map[string]interface{} "Rutina grupo muscular no encontrada"
-// @Router /rutina-gm/{id} [get]
-func (h *RutinaGMHandler) ObtenerPorID(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	rutinaGM, err := h.usecase.ObtenerPorID(uint(id))
+// @Summary      Get routine muscle group by ID
+// @Description  Get a specific routine muscle group by its ID
+// @Tags         routine-muscle-groups
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Routine muscle group ID"
+// @Success      200  {object}  models.RutinaGrupoMuscular
+// @Failure      400  {object}  errors.ErrorResponse "Invalid ID format"
+// @Failure      404  {object}  errors.ErrorResponse "Routine muscle group not found"
+// @Router       /routine-muscle-groups/{id} [get]
+func (h *RoutineMuscleGroupHandler) GetByID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Rutina grupo muscular no encontrada"})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Routine muscle group ID must be a valid number", err))
+		return
+	}
+
+	rutinaGM, err := h.usecase.GetByID(uint(id))
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
 	c.JSON(http.StatusOK, rutinaGM)
 }
 
-// @Summary Actualizar rutina de grupo muscular
-// @Description Actualiza una rutina de grupo muscular existente
-// @Tags rutinas-grupo-muscular
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la rutina de grupo muscular"
-// @Param rutina body model.RutinaGrupoMuscular true "Datos actualizados de la rutina de grupo muscular"
-// @Success 200 {object} model.RutinaGrupoMuscular
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 404 {object} map[string]interface{} "Rutina grupo muscular no encontrada"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /rutina-gm/{id} [put]
-func (h *RutinaGMHandler) Actualizar(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-
-	_, err := h.usecase.ObtenerPorID(uint(id))
+// @Summary      Update routine muscle group
+// @Description  Update an existing routine muscle group
+// @Tags         routine-muscle-groups
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id                    path   int  true  "Routine muscle group ID"
+// @Param        routine_muscle_group  body   models.RutinaGrupoMuscular true "Updated routine muscle group data"
+// @Success      200  {object}  models.RutinaGrupoMuscular
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      404  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /routine-muscle-groups/{id} [put]
+func (h *RoutineMuscleGroupHandler) Update(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Rutina grupo muscular no encontrada"})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Routine muscle group ID must be a valid number", err))
 		return
 	}
 
-	var rutinaGM model.RutinaGrupoMuscular
+	var rutinaGM models.RutinaGrupoMuscular
 	if err := c.ShouldBindJSON(&rutinaGM); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
 
-	if err := h.usecase.Actualizar(&rutinaGM); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar rutina grupo muscular"})
+	rutinaGM.ID = uint(id)
+	if err := h.usecase.Update(&rutinaGM); err != nil {
+		c.Error(err)
 		return
 	}
 
 	c.JSON(http.StatusOK, rutinaGM)
 }
 
-// @Summary Eliminar rutina de grupo muscular
-// @Description Elimina una rutina de grupo muscular del sistema
-// @Tags rutinas-grupo-muscular
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la rutina de grupo muscular"
-// @Success 200 {object} map[string]interface{} "Rutina grupo muscular eliminada correctamente"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /rutina-gm/{id} [delete]
-func (h *RutinaGMHandler) Eliminar(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	if err := h.usecase.Eliminar(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar rutina grupo muscular"})
+// @Summary      Delete routine muscle group
+// @Description  Delete a routine muscle group from the system
+// @Tags         routine-muscle-groups
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path      int  true  "Routine muscle group ID"
+// @Success      204 "No Content"
+// @Failure      400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object} errors.ErrorResponse "Internal server error"
+// @Router       /routine-muscle-groups/{id} [delete]
+func (h *RoutineMuscleGroupHandler) Delete(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Routine muscle group ID must be a valid number", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Rutina grupo muscular eliminada correctamente"})
+	if err := h.usecase.Delete(uint(id)); err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
-// @Summary Obtener grupos musculares por rutina
-// @Description Obtiene todos los grupos musculares asociados a una rutina específica
-// @Tags rutinas-grupo-muscular
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la rutina"
-// @Success 200 {array} model.GrupoMuscular
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /rutina/grupo-muscular/{id} [get]
-func (h *RutinaGMHandler) ObtenerGruposMuscularesPorRutina(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	grupos, err := h.usecase.ObtenerGruposMuscularesPorRutina(uint(id))
+// @Summary      Get muscle groups by routine
+// @Description  Get all muscle groups associated with a specific routine
+// @Tags         routine-muscle-groups
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path      int  true  "Routine ID"
+// @Success      200 {object}  models.RutinaConGruposMusculares
+// @Failure      400 {object}  errors.ErrorResponse "Invalid routine ID format"
+// @Failure      500 {object}  errors.ErrorResponse "Internal server error"
+// @Router       /routine-muscle-groups/routine/{id}/muscle-groups [get]
+func (h *RoutineMuscleGroupHandler) GetMuscleGroupsByRoutine(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Routine ID must be a valid number", err))
+		return
+	}
+
+	grupos, err := h.usecase.GetMuscleGroupsByRoutine(uint(id))
+	if err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, grupos)

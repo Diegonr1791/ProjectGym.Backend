@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	model "github.com/Diegonr1791/GymBro/internal/domain/models"
-	usecase "github.com/Diegonr1791/GymBro/internal/usecase"
+	domainErrors "github.com/Diegonr1791/GymBro/internal/domain/errors"
+	models "github.com/Diegonr1791/GymBro/internal/domain/models"
+	"github.com/Diegonr1791/GymBro/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,116 +17,140 @@ type GrupoMuscularHandler struct {
 func NewGrupoMuscularHandler(r gin.IRouter, uc *usecase.GrupoMuscularUseCase) {
 	h := &GrupoMuscularHandler{uc}
 
-	r.POST("/grupo-muscular", h.Crear)
-	r.GET("/grupo-muscular", h.ObtenerTodos)
-	r.GET("/grupo-muscular/:id", h.ObtenerPorID)
-	r.PUT("/grupo-muscular/:id", h.Actualizar)
-	r.DELETE("/grupo-muscular/:id", h.Eliminar)
+	// Grouping muscle group routes under "muscle-groups"
+	muscleGroupRoutes := r.Group("/muscle-groups")
+	{
+		muscleGroupRoutes.GET("", h.GetAll)
+		muscleGroupRoutes.POST("", h.Create)
+		muscleGroupRoutes.GET("/:id", h.GetByID)
+		muscleGroupRoutes.PUT("/:id", h.Update)
+		muscleGroupRoutes.DELETE("/:id", h.Delete)
+	}
 }
 
-// @Summary Crear nuevo grupo muscular
-// @Description Crea un nuevo grupo muscular en el sistema
-// @Tags grupos-musculares
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param grupo body model.GrupoMuscular true "Datos del grupo muscular"
-// @Success 201 {object} model.GrupoMuscular
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /grupo-muscular [post]
-func (h *GrupoMuscularHandler) Crear(c *gin.Context) {
-	var g model.GrupoMuscular
+// @Summary      Create a new muscle group
+// @Description  Create a new muscle group in the system
+// @Tags         muscle-groups
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        muscle-group body models.GrupoMuscular true "Muscle group data"
+// @Success      201  {object}  models.GrupoMuscular
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /muscle-groups [post]
+func (h *GrupoMuscularHandler) Create(c *gin.Context) {
+	var g models.GrupoMuscular
 	if err := c.ShouldBindJSON(&g); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
-	if err := h.uc.Crear(&g); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	if err := h.uc.CreateMuscleGroup(&g); err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusCreated, g)
 }
 
-// @Summary Obtener todos los grupos musculares
-// @Description Obtiene la lista completa de grupos musculares
-// @Tags grupos-musculares
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {array} model.GrupoMuscular
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /grupo-muscular [get]
-func (h *GrupoMuscularHandler) ObtenerTodos(c *gin.Context) {
-	grupos, err := h.uc.ObtenerTodos()
+// @Summary      Get all muscle groups
+// @Description  Get a complete list of muscle groups
+// @Tags         muscle-groups
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   models.GrupoMuscular
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /muscle-groups [get]
+func (h *GrupoMuscularHandler) GetAll(c *gin.Context) {
+	grupos, err := h.uc.GetAllMuscleGroups()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, grupos)
 }
 
-// @Summary Obtener grupo muscular por ID
-// @Description Obtiene un grupo muscular específico por su ID
-// @Tags grupos-musculares
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del grupo muscular"
-// @Success 200 {object} model.GrupoMuscular
-// @Failure 404 {object} map[string]interface{} "Grupo muscular no encontrado"
-// @Router /grupo-muscular/{id} [get]
-func (h *GrupoMuscularHandler) ObtenerPorID(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	g, err := h.uc.ObtenerPorID(uint(id))
+// @Summary      Get muscle group by ID
+// @Description  Get a specific muscle group by its ID
+// @Tags         muscle-groups
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Muscle Group ID"
+// @Success      200  {object}  models.GrupoMuscular
+// @Failure      400  {object}  errors.ErrorResponse "Invalid ID format"
+// @Failure      404  {object}  errors.ErrorResponse "Muscle group not found"
+// @Router       /muscle-groups/{id} [get]
+func (h *GrupoMuscularHandler) GetByID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Muscle group ID must be a valid number", err))
 		return
 	}
-	c.JSON(http.StatusOK, g)
+
+	grupo, err := h.uc.GetMuscleGroupByID(uint(id))
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, grupo)
 }
 
-// @Summary Actualizar grupo muscular
-// @Description Actualiza un grupo muscular existente
-// @Tags grupos-musculares
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del grupo muscular"
-// @Param grupo body model.GrupoMuscular true "Datos actualizados del grupo muscular"
-// @Success 200 {object} model.GrupoMuscular
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /grupo-muscular/{id} [put]
-func (h *GrupoMuscularHandler) Actualizar(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	var g model.GrupoMuscular
+// @Summary      Update muscle group
+// @Description  Update an existing muscle group
+// @Tags         muscle-groups
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id           path   int  true  "Muscle Group ID"
+// @Param        muscle-group body   models.GrupoMuscular true "Updated muscle group data"
+// @Success      200  {object}  models.GrupoMuscular
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      404  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /muscle-groups/{id} [put]
+func (h *GrupoMuscularHandler) Update(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Muscle group ID must be a valid number", err))
+		return
+	}
+
+	var g models.GrupoMuscular
 	if err := c.ShouldBindJSON(&g); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
+
 	g.ID = uint(id)
-	if err := h.uc.Actualizar(&g); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.uc.UpdateMuscleGroup(&g); err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, g)
 }
 
-// @Summary Eliminar grupo muscular
-// @Description Elimina un grupo muscular del sistema
-// @Tags grupos-musculares
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del grupo muscular"
-// @Success 204 "Grupo muscular eliminado"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /grupo-muscular/{id} [delete]
-func (h *GrupoMuscularHandler) Eliminar(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	if err := h.uc.Eliminar(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// @Summary      Delete muscle group
+// @Description  Delete a muscle group from the system
+// @Tags         muscle-groups
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path      int  true  "Muscle Group ID"
+// @Success      204 "No Content"
+// @Failure      400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object} errors.ErrorResponse "Internal server error"
+// @Router       /muscle-groups/{id} [delete]
+func (h *GrupoMuscularHandler) Delete(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Muscle group ID must be a valid number", err))
+		return
+	}
+
+	if err := h.uc.DeleteMuscleGroup(uint(id)); err != nil {
+		c.Error(err)
 		return
 	}
 	c.Status(http.StatusNoContent)

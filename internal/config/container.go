@@ -26,15 +26,19 @@ type Container struct {
 
 	// Use Cases
 	UsuarioService         *usecase.UsuarioUsecase
-	RutinaService          *usecase.RutinaService
+	RutinaService          *usecase.RutinaUsecase
 	GrupoMuscularService   *usecase.GrupoMuscularUseCase
-	RutinaGMService        *usecase.RutinaGrupoMuscularUsecase
-	FavoritaService        *usecase.FavoritaUsecase
-	MedicionService        *usecase.MedicionUsecase
+	RutinaGMService        *usecase.RoutineMuscleGroupUsecase
+	FavoritaService        *usecase.FavoriteUsecase
+	MedicionService        *usecase.MeasurementUsecase
 	TipoEjercicioService   *usecase.TypeExerciseUsecase
 	EjercicioService       *usecase.ExerciseUsecase
 	SesionService          *usecase.SessionUsecase
 	SesionEjercicioService *usecase.SessionExerciseUsecase
+	RefreshTokenService    *usecase.RefreshTokenUsecase
+
+	// Auth Configuration
+	JWTConfig *Config
 }
 
 // NewContainer crea y configura todas las dependencias
@@ -42,8 +46,12 @@ func NewContainer() *Container {
 	// Conectar a la base de datos
 	ConnectDB()
 
+	// Configurar JWT
+	jwtConfig := LoadConfig()
+
 	container := &Container{
-		DB: DB,
+		DB:        DB,
+		JWTConfig: jwtConfig,
 	}
 
 	// Inicializar repositories
@@ -58,7 +66,7 @@ func NewContainer() *Container {
 // initializeRepositories configura todos los repositories
 func (c *Container) initializeRepositories() {
 	c.UsuarioRepo = persistence.NewUsuarioGormRepository(c.DB)
-	c.RutinaRepo = persistence.NewRutinaPgRepo(c.DB)
+	c.RutinaRepo = persistence.NewRutinaGormRepository(c.DB)
 	c.GrupoMuscularRepo = persistence.NewGrupoMuscularGormRepository(c.DB)
 	c.RutinaGMRepo = persistence.NewRutinaGrupoMuscularGormRepository(c.DB)
 	c.FavoritaRepo = persistence.NewFavoritaGormRepository(c.DB)
@@ -73,13 +81,14 @@ func (c *Container) initializeRepositories() {
 // initializeUseCases configura todos los use cases
 func (c *Container) initializeUseCases() {
 	c.UsuarioService = usecase.NewUsuarioUsecase(c.UsuarioRepo)
-	c.RutinaService = usecase.NewRutinaUseCase(c.RutinaRepo)
+	c.RutinaService = usecase.NewRutinaUsecase(c.RutinaRepo)
 	c.GrupoMuscularService = usecase.NewGrupoMuscularUseCase(c.GrupoMuscularRepo)
-	c.RutinaGMService = usecase.NewRutinaGrupoMuscularUsecase(c.RutinaGMRepo)
-	c.FavoritaService = usecase.NewFavoritaUsecase(c.FavoritaRepo)
-	c.MedicionService = usecase.NewMedicionUsecase(c.MedicionRepo)
+	c.RutinaGMService = usecase.NewRoutineMuscleGroupUsecase(c.RutinaGMRepo)
+	c.FavoritaService = usecase.NewFavoriteUsecase(c.FavoritaRepo)
+	c.MedicionService = usecase.NewMeasurementUsecase(c.MedicionRepo)
 	c.TipoEjercicioService = usecase.NewTypeExerciseUsecase(c.TipoEjercicioRepo)
 	c.EjercicioService = usecase.NewExerciseUsecase(c.EjercicioRepo)
 	c.SesionService = usecase.NewSessionUsecase(c.SesionRepo)
 	c.SesionEjercicioService = usecase.NewSessionExerciseUsecase(c.SesionEjercicioRepo)
+	c.RefreshTokenService = usecase.NewRefreshTokenUsecase(c.RefreshTokenRepo, c.UsuarioRepo, c.JWTConfig)
 }

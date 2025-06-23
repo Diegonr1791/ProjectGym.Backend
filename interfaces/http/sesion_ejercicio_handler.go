@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	model "github.com/Diegonr1791/GymBro/internal/domain/models"
-	usecase "github.com/Diegonr1791/GymBro/internal/usecase"
+	domainErrors "github.com/Diegonr1791/GymBro/internal/domain/errors"
+	models "github.com/Diegonr1791/GymBro/internal/domain/models"
+	"github.com/Diegonr1791/GymBro/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,140 +18,191 @@ type SessionExerciseHandler struct {
 func NewSessionExerciseHandler(r gin.IRouter, uc *usecase.SessionExerciseUsecase) {
 	h := &SessionExerciseHandler{uc}
 
-	r.POST("/sesion-ejercicio", h.CreateSessionExercise)
-	r.GET("/sesion-ejercicio", h.GetAllSessionExercises)
-	r.GET("/sesion-ejercicio/:id", h.GetSessionExerciseById)
-	r.PUT("/sesion-ejercicio/:id", h.UpdateSessionExercise)
-	r.DELETE("/sesion-ejercicio/:id", h.DeleteSessionExercise)
-	r.GET("/sesion-ejercicio/sesion/:id", h.GetSessionExercisesBySessionID)
+	// Grouping session exercise routes under "session-exercises"
+	sessionExerciseRoutes := r.Group("/session-exercises")
+	{
+		sessionExerciseRoutes.GET("", h.GetAll)
+		sessionExerciseRoutes.POST("", h.Create)
+		sessionExerciseRoutes.GET("/:id", h.GetByID)
+		sessionExerciseRoutes.PUT("/:id", h.Update)
+		sessionExerciseRoutes.DELETE("/:id", h.Delete)
+		sessionExerciseRoutes.GET("/session/:id", h.GetBySessionID)
+	}
 }
 
-// @Summary Crear nuevo ejercicio de sesión
-// @Description Crea un nuevo ejercicio de sesión en el sistema
-// @Tags sesion-ejercicio
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param sesion_ejercicio body model.SesionEjercicio true "Datos del ejercicio de sesión"
-// @Success 201 {object} model.SesionEjercicio
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /sesion-ejercicio [post]
-func (h *SessionExerciseHandler) CreateSessionExercise(c *gin.Context) {
-	var sesionEjercicio model.SesionEjercicio
+// @Summary      Create a new session exercise
+// @Description  Create a new session exercise in the system
+// @Tags         session-exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        session_exercise body models.SesionEjercicio true "Session exercise data"
+// @Success      201  {object}  models.SesionEjercicio
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /session-exercises [post]
+func (h *SessionExerciseHandler) Create(c *gin.Context) {
+	var sesionEjercicio models.SesionEjercicio
 	if err := c.ShouldBindJSON(&sesionEjercicio); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
+
 	if err := h.uc.CreateSessionExercise(&sesionEjercicio); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusCreated, sesionEjercicio)
 }
 
-// @Summary Obtener todos los ejercicios de sesión
-// @Description Obtiene la lista completa de ejercicios de sesión
-// @Tags sesion-ejercicio
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {array} model.SesionEjercicio
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /sesion-ejercicio [get]
-func (h *SessionExerciseHandler) GetAllSessionExercises(c *gin.Context) {
+// @Summary      Get all session exercises
+// @Description  Get a complete list of session exercises
+// @Tags         session-exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   models.SesionEjercicio
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /session-exercises [get]
+func (h *SessionExerciseHandler) GetAll(c *gin.Context) {
 	sesionesEjercicios, err := h.uc.GetAllSessionExercises()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, sesionesEjercicios)
 }
 
-// @Summary Obtener ejercicio de sesión por ID
-// @Description Obtiene un ejercicio de sesión específico por su ID
-// @Tags sesion-ejercicio
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del ejercicio de sesión"
-// @Success 200 {object} model.SesionEjercicio
-// @Failure 404 {object} map[string]interface{} "Ejercicio de sesión no encontrado"
-// @Router /sesion-ejercicio/{id} [get]
-func (h *SessionExerciseHandler) GetSessionExerciseById(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	sesionEjercicio, err := h.uc.GetSessionExerciseById(uint(id))
+// @Summary      Get session exercise by ID
+// @Description  Get a specific session exercise by its ID
+// @Tags         session-exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Session exercise ID"
+// @Success      200  {object}  models.SesionEjercicio
+// @Failure      400  {object}  errors.ErrorResponse "Invalid ID format"
+// @Failure      404  {object}  errors.ErrorResponse "Session exercise not found"
+// @Router       /session-exercises/{id} [get]
+func (h *SessionExerciseHandler) GetByID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Session exercise ID must be a valid number", err))
+		return
+	}
+
+	sesionEjercicio, err := h.uc.GetSessionExerciseByID(uint(id))
+	if err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, sesionEjercicio)
 }
 
-// @Summary Actualizar ejercicio de sesión
-// @Description Actualiza un ejercicio de sesión existente
-// @Tags sesion-ejercicio
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del ejercicio de sesión"
-// @Param sesion_ejercicio body model.SesionEjercicio true "Datos actualizados del ejercicio de sesión"
-// @Success 200 {object} model.SesionEjercicio
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /sesion-ejercicio/{id} [put]
-func (h *SessionExerciseHandler) UpdateSessionExercise(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	var sesionEjercicio model.SesionEjercicio
-	if err := c.ShouldBindJSON(&sesionEjercicio); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// @Summary      Update session exercise
+// @Description  Update an existing session exercise
+// @Tags         session-exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id                path   int  true  "Session exercise ID"
+// @Param        session_exercise  body   models.SesionEjercicio true "Updated session exercise data"
+// @Success      200  {object}  models.SesionEjercicio
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      404  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /session-exercises/{id} [put]
+func (h *SessionExerciseHandler) Update(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Session exercise ID must be a valid number", err))
 		return
 	}
+
+	var sesionEjercicio models.SesionEjercicio
+	if err := c.ShouldBindJSON(&sesionEjercicio); err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
+		return
+	}
+
 	sesionEjercicio.ID = uint(id)
 	if err := h.uc.UpdateSessionExercise(&sesionEjercicio); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, sesionEjercicio)
 }
 
-// @Summary Eliminar ejercicio de sesión
-// @Description Elimina un ejercicio de sesión del sistema
-// @Tags sesion-ejercicio
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID del ejercicio de sesión"
-// @Success 204 "Ejercicio de sesión eliminado"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /sesion-ejercicio/{id} [delete]
-func (h *SessionExerciseHandler) DeleteSessionExercise(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+// @Summary      Delete session exercise
+// @Description  Delete a session exercise from the system
+// @Tags         session-exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path      int  true  "Session exercise ID"
+// @Success      204 "No Content"
+// @Failure      400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object} errors.ErrorResponse "Internal server error"
+// @Router       /session-exercises/{id} [delete]
+func (h *SessionExerciseHandler) Delete(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Session exercise ID must be a valid number", err))
+		return
+	}
+
 	if err := h.uc.DeleteSessionExercise(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.Status(http.StatusNoContent)
 }
 
-// @Summary Obtener ejercicios de sesión por ID de sesión
-// @Description Obtiene todos los ejercicios de una sesión específica
-// @Tags sesiones-ejercicios
-// @Accept json
-// @Produce json
-// @Param id path int true "ID de la sesión"
-// @Param fechaDesde query string false "Fecha desde (formato: 2006-01-02)"
-// @Param fechaHasta query string false "Fecha hasta (formato: 2006-01-02)"
-// @Success 200 {array} model.SesionEjercicio
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /sesion-ejercicio/sesion/{id} [get]
-func (h *SessionExerciseHandler) GetSessionExercisesBySessionID(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	fechaDesde, _ := time.Parse("2006-01-02", c.Query("fechaDesde"))
-	fechaHasta, _ := time.Parse("2006-01-02", c.Query("fechaHasta"))
-	sesionesEjercicios, err := h.uc.GetSessionExercisesBySessionID(uint(id), fechaDesde, fechaHasta)
+// @Summary      Get session exercises by session ID
+// @Description  Get all exercises of a specific session
+// @Tags         session-exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id           path   int     true  "Session ID"
+// @Param        start_date   query  string  false "Start date (format: 2006-01-02)"
+// @Param        end_date     query  string  false "End date (format: 2006-01-02)"
+// @Success      200 {array}   models.SesionEjercicio
+// @Failure      400 {object}  errors.ErrorResponse "Invalid ID format or date format"
+// @Failure      500 {object}  errors.ErrorResponse "Internal server error"
+// @Router       /session-exercises/session/{id} [get]
+func (h *SessionExerciseHandler) GetBySessionID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Session ID must be a valid number", err))
+		return
+	}
+
+	startDateStr := c.Query("start_date")
+	endDateStr := c.Query("end_date")
+
+	var startDate, endDate time.Time
+	var err1, err2 error
+
+	if startDateStr != "" {
+		startDate, err1 = time.Parse("2006-01-02", startDateStr)
+		if err1 != nil {
+			c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_DATE_FORMAT", "Invalid start date format. Use format: 2006-01-02", err1))
+			return
+		}
+	}
+
+	if endDateStr != "" {
+		endDate, err2 = time.Parse("2006-01-02", endDateStr)
+		if err2 != nil {
+			c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_DATE_FORMAT", "Invalid end date format. Use format: 2006-01-02", err2))
+			return
+		}
+	}
+
+	sesionesEjercicios, err := h.uc.GetSessionExercisesBySessionID(uint(id), startDate, endDate)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, sesionesEjercicios)

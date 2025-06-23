@@ -4,148 +4,173 @@ import (
 	"net/http"
 	"strconv"
 
-	model "github.com/Diegonr1791/GymBro/internal/domain/models"
-	usecase "github.com/Diegonr1791/GymBro/internal/usecase"
+	domainErrors "github.com/Diegonr1791/GymBro/internal/domain/errors"
+	models "github.com/Diegonr1791/GymBro/internal/domain/models"
+	"github.com/Diegonr1791/GymBro/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
 
-type MedicionHandler struct {
-	uc *usecase.MedicionUsecase
+type MeasurementHandler struct {
+	uc *usecase.MeasurementUsecase
 }
 
-func NewMedicionHandler(r gin.IRouter, uc *usecase.MedicionUsecase) {
-	h := &MedicionHandler{uc}
+func NewMeasurementHandler(r gin.IRouter, uc *usecase.MeasurementUsecase) {
+	h := &MeasurementHandler{uc}
 
-	r.POST("/medicion", h.Crear)
-	r.GET("/medicion", h.ObtenerTodos)
-	r.GET("/medicion/:id", h.ObtenerPorID)
-	r.PUT("/medicion/:id", h.Actualizar)
-	r.DELETE("/medicion/:id", h.Eliminar)
-	r.GET("/medicion/usuario/:usuario_id", h.ObtenerPorUsuarioID)
+	measurementRoutes := r.Group("/measurements")
+	{
+		measurementRoutes.POST("", h.Create)
+		measurementRoutes.GET("", h.GetAll)
+		measurementRoutes.GET("/:id", h.GetByID)
+		measurementRoutes.PUT("/:id", h.Update)
+		measurementRoutes.DELETE("/:id", h.Delete)
+		measurementRoutes.GET("/user/:user_id", h.GetByUserID)
+	}
 }
 
-// @Summary Crear nueva medición
-// @Description Crea una nueva medición en el sistema
-// @Tags mediciones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param medicion body model.Medicion true "Datos de la medición"
-// @Success 201 {object} model.Medicion
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /medicion [post]
-func (h *MedicionHandler) Crear(c *gin.Context) {
-	var medicion model.Medicion
+// @Summary      Create a new measurement
+// @Description  Create a new measurement in the system
+// @Tags         measurements
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        measurement body models.Medicion true "Measurement data"
+// @Success      201  {object}  models.Medicion
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /measurements [post]
+func (h *MeasurementHandler) Create(c *gin.Context) {
+	var medicion models.Medicion
 	if err := c.ShouldBindJSON(&medicion); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
 	if err := h.uc.Create(&medicion); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusCreated, medicion)
 }
 
-// @Summary Obtener todas las mediciones
-// @Description Obtiene la lista completa de mediciones
-// @Tags mediciones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {array} model.Medicion
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /medicion [get]
-func (h *MedicionHandler) ObtenerTodos(c *gin.Context) {
+// @Summary      Get all measurements
+// @Description  Get a complete list of measurements
+// @Tags         measurements
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   models.Medicion
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /measurements [get]
+func (h *MeasurementHandler) GetAll(c *gin.Context) {
 	mediciones, err := h.uc.GetAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, mediciones)
 }
 
-// @Summary Obtener medición por ID
-// @Description Obtiene una medición específica por su ID
-// @Tags mediciones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la medición"
-// @Success 200 {object} model.Medicion
-// @Failure 404 {object} map[string]interface{} "Medición no encontrada"
-// @Router /medicion/{id} [get]
-func (h *MedicionHandler) ObtenerPorID(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+// @Summary      Get measurement by ID
+// @Description  Get a specific measurement by its ID
+// @Tags         measurements
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Measurement ID"
+// @Success      200  {object}  models.Medicion
+// @Failure      400  {object}  errors.ErrorResponse "Invalid ID format"
+// @Failure      404  {object}  errors.ErrorResponse "Measurement not found"
+// @Router       /measurements/{id} [get]
+func (h *MeasurementHandler) GetByID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Measurement ID must be a valid number", err))
+		return
+	}
 	medicion, err := h.uc.GetByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, medicion)
 }
 
-// @Summary Actualizar medición
-// @Description Actualiza una medición existente
-// @Tags mediciones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la medición"
-// @Param medicion body model.Medicion true "Datos actualizados de la medición"
-// @Success 200 {object} model.Medicion
-// @Failure 400 {object} map[string]interface{} "Datos inválidos"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /medicion/{id} [put]
-func (h *MedicionHandler) Actualizar(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	var medicion model.Medicion
+// @Summary      Update measurement
+// @Description  Update an existing measurement
+// @Tags         measurements
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id          path   int  true  "Measurement ID"
+// @Param        measurement body   models.Medicion true "Updated measurement data"
+// @Success      200  {object}  models.Medicion
+// @Failure      400  {object}  errors.ErrorResponse
+// @Failure      404  {object}  errors.ErrorResponse
+// @Failure      500  {object}  errors.ErrorResponse
+// @Router       /measurements/{id} [put]
+func (h *MeasurementHandler) Update(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Measurement ID must be a valid number", err))
+		return
+	}
+	var medicion models.Medicion
 	if err := c.ShouldBindJSON(&medicion); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON body", err))
 		return
 	}
 	medicion.ID = uint(id)
 	if err := h.uc.Update(&medicion); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, medicion)
 }
 
-// @Summary Eliminar medición
-// @Description Elimina una medición del sistema
-// @Tags mediciones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de la medición"
-// @Success 204 "Medición eliminada"
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /medicion/{id} [delete]
-func (h *MedicionHandler) Eliminar(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+// @Summary      Delete measurement
+// @Description  Delete a measurement from the system
+// @Tags         measurements
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path      int  true  "Measurement ID"
+// @Success      204 "No Content"
+// @Failure      400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure      500 {object} errors.ErrorResponse "Internal server error"
+// @Router       /measurements/{id} [delete]
+func (h *MeasurementHandler) Delete(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_ID", "Measurement ID must be a valid number", err))
+		return
+	}
 	if err := h.uc.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 	c.Status(http.StatusNoContent)
 }
 
-// @Summary Obtener mediciones por usuario
-// @Description Obtiene todas las mediciones de un usuario específico
-// @Tags mediciones
-// @Accept json
-// @Produce json
-// @Param usuario_id path int true "ID del usuario"
-// @Success 200 {array} model.Medicion
-// @Failure 500 {object} map[string]interface{} "Error interno del servidor"
-// @Router /medicion/usuario/{usuario_id} [get]
-func (h *MedicionHandler) ObtenerPorUsuarioID(c *gin.Context) {
-	usuarioID, _ := strconv.Atoi(c.Param("usuario_id"))
-	mediciones, err := h.uc.GetMesurementsByUserID(uint(usuarioID))
+// @Summary      Get measurements by user
+// @Description  Get all measurements of a specific user
+// @Tags         measurements
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        user_id  path      int  true  "User ID"
+// @Success      200 {array}   models.Medicion
+// @Failure      400 {object}  errors.ErrorResponse "Invalid user ID format"
+// @Failure      500 {object}  errors.ErrorResponse "Internal server error"
+// @Router       /measurements/user/{user_id} [get]
+func (h *MeasurementHandler) GetByUserID(c *gin.Context) {
+	userID, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_USER_ID", "User ID must be a valid number", err))
+		return
+	}
+	mediciones, err := h.uc.GetByUserID(uint(userID))
+	if err != nil {
+		c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, mediciones)

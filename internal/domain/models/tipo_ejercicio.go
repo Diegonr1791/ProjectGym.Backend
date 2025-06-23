@@ -1,4 +1,4 @@
-package model
+package models
 
 type TipoEjercicio struct {
 	ID     uint   `gorm:"primaryKey" json:"id"`
