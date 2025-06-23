@@ -12,13 +12,13 @@ type User struct {
 	ID        uint   `gorm:"primaryKey" json:"id" example:"1"`
 	Name      string `gorm:"not null" json:"name" example:"John Doe"`
 	Email     string `gorm:"unique;not null" json:"email" example:"john@example.com"`
-	Password  string `gorm:"not null" json:"-"`
+	Password  string `gorm:"not null" json:"password" example:"password123"`
 	RoleID    uint   `gorm:"not null" json:"role_id" example:"1"`
 	IsActive  bool   `gorm:"default:true" json:"is_active" example:"true"`
 	IsDeleted bool   `gorm:"default:false" json:"is_deleted" example:"false"` // Soft delete
 
 	// Relations
-	Role         Role           `gorm:"foreignKey:RoleID" json:"role,omitempty"`
+	Role         Role           `gorm:"foreignKey:RoleID" json:"role,omitempty" swaggerignore:"true"`
 	RefreshToken []RefreshToken `gorm:"foreignKey:UserID" json:"-"`
 
 	// Audit fields

@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"regexp"
 
 	"github.com/Diegonr1791/GymBro/internal/auth"
 	domainErrors "github.com/Diegonr1791/GymBro/internal/domain/errors"
@@ -29,8 +30,8 @@ func NewAuthHandler(r gin.IRouter, userUsecase *usecase.UsuarioUsecase, rtUsecas
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type LoginResponse struct {
@@ -39,6 +40,27 @@ type LoginResponse struct {
 		ID    uint   `json:"id"`
 		Email string `json:"email"`
 	} `json:"user"`
+}
+
+// validateLoginRequest validates login request with custom error codes
+func (h *AuthHandler) validateLoginRequest(req *LoginRequest) error {
+	// Validate email
+	if req.Email == "" {
+		return domainErrors.ErrEmailRequired
+	}
+
+	// Validate email format
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	if !emailRegex.MatchString(req.Email) {
+		return domainErrors.ErrInvalidEmailFormat
+	}
+
+	// Validate password
+	if req.Password == "" {
+		return domainErrors.ErrPasswordRequired
+	}
+
+	return nil
 }
 
 // @Summary      Login
@@ -55,7 +77,14 @@ type LoginResponse struct {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_LOGIN_DATA", "Invalid login data: "+err.Error(), err))
+		// Handle JSON binding errors with custom error codes
+		c.Error(domainErrors.NewAppError(http.StatusBadRequest, "INVALID_JSON", "Invalid JSON format", err))
+		return
+	}
+
+	// Validate request with custom validation
+	if err := h.validateLoginRequest(&req); err != nil {
+		c.Error(err)
 		return
 	}
 
