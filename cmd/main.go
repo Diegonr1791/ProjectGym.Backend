@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"log"
 
-	_ "github.com/Diegonr1791/GymBro/docs"
 	"github.com/Diegonr1791/GymBro/internal/config"
 	"github.com/joho/godotenv"
 )
