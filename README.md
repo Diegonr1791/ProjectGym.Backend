@@ -2,16 +2,121 @@
 
 ## Resumen Ejecutivo
 
-GymBro es una API RESTful para la gestión de rutinas de gimnasio, construida con Go, siguiendo los principios de Clean Architecture. La API proporciona funcionalidades completas para la gestión de usuarios, rutinas, ejercicios, sesiones y mediciones.
+GymBro es una API RESTful para la gestión de rutinas de gimnasio, construida con Go, siguiendo los principios de Clean Architecture. La API proporciona funcionalidades completas para la gestión de usuarios, rutinas, ejercicios, sesiones y mediciones, con un sistema robusto de autenticación y autorización.
+
+## 🚀 Características
+
+- **🔐 Autenticación JWT** con refresh tokens
+- **👥 Sistema de Roles** (Admin, Dev, User) con autorización granular
+- **🛡️ Middleware de Autorización** para operaciones sensibles
+- **📊 Gestión de Rutinas** y ejercicios
+- **📈 Seguimiento de Mediciones** corporales
+- **💪 Grupos Musculares** y tipos de ejercicios
+- **⭐ Sistema de Favoritos** para rutinas
+- **📝 Sesiones de Entrenamiento** con ejercicios
+- **🌱 Sistema de Seeding** automático para datos iniciales
+- **📚 Documentación Swagger** completa
+- **🐳 Docker** listo para producción
+- **☁️ Deploy automático** en Railway
+
+## 🏗️ Arquitectura
+
+El proyecto sigue **Clean Architecture** con las siguientes capas:
+
+```
+📁 ProjectGym.Backend/
+├── 📁 cmd/                    # Punto de entrada de la aplicación
+├── 📁 internal/               # Lógica interna de la aplicación
+│   ├── 📁 adapters/          # Adaptadores entre capas
+│   ├── 📁 auth/              # Autenticación y autorización
+│   ├── 📁 config/            # Configuración y DI container
+│   ├── 📁 domain/            # Entidades y reglas de negocio
+│   └── 📁 usecase/           # Casos de uso de la aplicación
+├── 📁 interfaces/             # Interfaces externas (HTTP, etc.)
+├── 📁 infraestructure/       # Implementaciones de infraestructura
+└── 📁 docs/                  # Documentación
+```
+
+## 🌱 Sistema de Seeding
+
+La aplicación incluye un sistema de seeding automático que crea:
+
+### **Roles del Sistema**
+
+- **Admin**: Acceso completo al sistema
+- **Dev**: Permisos de administración para desarrollo
+- **User**: Usuario regular
+
+### **Usuarios Iniciales**
+
+Los usuarios se crean automáticamente según las variables de entorno configuradas:
+
+```bash
+# Variables para usuario administrador
+ADMIN_EMAIL=tu-email@ejemplo.com
+ADMIN_PASSWORD=tu-contraseña-segura
+ADMIN_NAME=Tu Nombre (opcional)
+
+# Variables para usuario desarrollador
+DEV_EMAIL=dev@ejemplo.com
+DEV_PASSWORD=contraseña-dev
+DEV_NAME=Nombre Dev (opcional)
+```
+
+### **Ejecutar Seeding**
+
+```bash
+# Usando Makefile (recomendado)
+make seed
+
+# Comando directo
+go run cmd/seed/main.go
+
+# Seeding automático al iniciar la aplicación
+go run cmd/main.go
+
+# Seeding en Railway
+railway run go run cmd/seed/main.go
+```
+
+### **Comandos Útiles**
+
+```bash
+# Ver todos los comandos disponibles
+make help
+
+# Configurar proyecto para desarrollo
+make setup
+
+# Ejecutar aplicación
+make run
+
+# Ejecutar tests
+make test
+
+# Deploy en Railway
+make deploy
+
+# Ver logs de Railway
+make logs
+```
+
+⚠️ **IMPORTANTE**:
+
+- Las credenciales se configuran mediante variables de entorno
+- Cambia las contraseñas después del primer login
+- Nunca commits credenciales en el código
 
 ## Características Principales
 
 ### 🔐 Autenticación y Autorización
 
-- **JWT Authentication**: Tokens de acceso seguros
+- **JWT Authentication**: Tokens de acceso seguros con información de rol
 - **Refresh Tokens**: Renovación automática de sesiones
 - **Role-based Access Control**: Control de acceso basado en roles
 - **Secure Password Hashing**: Bcrypt para almacenamiento seguro
+- **Authorization Middleware**: Middleware de autorización para operaciones sensibles
+- **User Deletion Protection**: Solo admin y dev pueden eliminar usuarios
 
 ### 👥 Gestión de Usuarios
 
@@ -19,6 +124,7 @@ GymBro es una API RESTful para la gestión de rutinas de gimnasio, construida co
 - **Validaciones Robustas**: Email, contraseña, nombre y rol
 - **Estados de Usuario**: Activo/inactivo, eliminado/restaurado
 - **Gestión de Roles**: Roles del sistema y personalizados
+- **Protected Operations**: Eliminación de usuarios protegida por autorización
 
 ### 🏋️ Gestión de Rutinas
 
@@ -47,8 +153,9 @@ ProjectGym.Backend/
 ├── interfaces/             # Capa de interfaces
 │   └── http/              # Handlers HTTP
 ├── internal/              # Lógica de negocio interna
+│   ├── adapters/          # Adaptadores para Clean Architecture
 │   ├── auth/              # Autenticación y autorización
-│   ├── config/            # Configuración
+│   ├── config/            # Configuración y factory patterns
 │   ├── domain/            # Entidades y reglas de negocio
 │   └── usecase/           # Casos de uso
 └── pkg/                   # Paquetes compartidos
@@ -60,13 +167,15 @@ ProjectGym.Backend/
 - **Use Case Pattern**: Lógica de negocio centralizada
 - **Dependency Injection**: Inyección de dependencias
 - **Middleware Pattern**: Interceptores HTTP
+- **Factory Pattern**: Creación de middlewares
+- **Adapter Pattern**: Adaptadores para Clean Architecture
 
 ## Endpoints de la API
 
 ### Autenticación
 
 ```
-POST   /api/v1/auth/login      - Iniciar sesión
+POST   /api/v1/auth/login      - Iniciar sesión (incluye información de rol)
 POST   /api/v1/auth/logout     - Cerrar sesión
 POST   /api/v1/auth/refresh    - Renovar token
 ```
@@ -80,9 +189,9 @@ GET    /api/v1/users/deleted           - Obtener usuarios eliminados
 POST   /api/v1/users                   - Crear usuario
 GET    /api/v1/users/:id               - Obtener usuario por ID
 PUT    /api/v1/users/:id               - Actualizar usuario
-DELETE /api/v1/users/:id               - Borrado lógico
+DELETE /api/v1/users/:id               - Borrado lógico (solo admin/dev)
 POST   /api/v1/users/:id/restore       - Restaurar usuario
-DELETE /api/v1/users/:id/permanent     - Borrado físico
+DELETE /api/v1/users/:id/permanent     - Borrado físico (solo admin/dev)
 GET    /api/v1/users/email/:email      - Obtener usuario por email
 ```
 
@@ -137,6 +246,40 @@ DELETE /api/v1/measurements/:id        - Eliminar medición
 ```
 
 ## Nuevas Funcionalidades Implementadas
+
+### 🛡️ Sistema de Autorización Profesional
+
+#### Características
+
+- **Clean Architecture**: Separación clara de responsabilidades
+- **Middleware de Autorización**: Verificación de roles en tiempo real
+- **Factory Pattern**: Creación centralizada de middlewares
+- **Adapter Pattern**: Adaptadores para evitar dependencias circulares
+- **Usecase de Autorización**: Lógica de autorización centralizada
+
+#### Roles del Sistema
+
+```go
+const (
+    RoleAdmin = "admin"
+    RoleUser  = "user"
+    RoleDev   = "dev"
+)
+```
+
+#### Operaciones Protegidas
+
+- **Eliminación de Usuarios**: Solo admin y dev pueden eliminar usuarios
+- **Borrado Físico**: Solo admin y dev pueden hacer hard delete
+- **Extensible**: Fácil agregar nuevas operaciones protegidas
+
+#### Flujo de Autorización
+
+1. **Autenticación**: JWT con RoleID incluido
+2. **Validación de Token**: Middleware JWT extrae claims
+3. **Verificación de Rol**: Consulta a base de datos para validar rol
+4. **Validación de Permisos**: Verificación contra roles permitidos
+5. **Ejecución**: Operación permitida o error 403
 
 ### 🗑️ Borrado Lógico (Soft Delete)
 
@@ -197,14 +340,15 @@ IsActive  bool `gorm:"default:true" json:"is_active"`
 - Verificación de estado activo en login
 - Manejo de usuarios inactivos
 - Validación de credenciales mejorada
-- Tokens JWT seguros
+- Tokens JWT seguros con información de rol
 
 #### Autorización
 
 - Control de acceso basado en roles
 - Roles del sistema protegidos
 - Jerarquía de permisos
-- Middleware de autorización
+- Middleware de autorización profesional
+- Verificación de permisos en tiempo real
 
 ## Códigos de Error
 
@@ -215,13 +359,14 @@ IsActive  bool `gorm:"default:true" json:"is_active"`
 3. **Validación de Nombre**: `NAME_REQUIRED`, `NAME_TOO_SHORT`, `INVALID_NAME_CHARACTERS`
 4. **Estados de Usuario**: `USER_INACTIVE`, `USER_ALREADY_DELETED`, `USER_NOT_DELETED`
 5. **Autenticación**: `INVALID_CREDENTIALS`, `USER_INACTIVE`
+6. **Autorización**: `FORBIDDEN`, `INSUFFICIENT_PERMISSIONS`, `ROLE_INFO_UNAVAILABLE`
 
 ### Formato de Respuesta
 
 ```json
 {
-  "code": "EMAIL_REQUIRED",
-  "message": "Email is required"
+  "code": "INSUFFICIENT_PERMISSIONS",
+  "message": "Insufficient permissions. Only admin and dev roles can perform this action."
 }
 ```
 
@@ -263,6 +408,7 @@ github.com/swaggo/swag            // Documentación Swagger
 - **Unit Tests**: Casos de uso y validaciones
 - **Integration Tests**: Endpoints y flujos completos
 - **Performance Tests**: Consultas y operaciones críticas
+- **Authorization Tests**: Pruebas de permisos y roles
 
 ### Casos de Prueba Críticos
 
@@ -271,80 +417,11 @@ github.com/swaggo/swag            // Documentación Swagger
 - [ ] Autenticación y autorización
 - [ ] Manejo de errores
 - [ ] Conflictos de datos
+- [ ] Verificación de permisos por rol
 
 ## Documentación Adicional
 
 ### Archivos de Documentación
 
 - `swagger.yaml` - Especificación OpenAPI completa
-- `user_validation_errors.md` - Códigos de error específicos
-- `migration_soft_delete.sql` - Script de migración
-- `clean_architecture.md` - Documentación de arquitectura
-
-### Swagger UI
-
-- **URL**: `http://localhost:8080/swagger/index.html`
-- **Especificación**: `http://localhost:8080/swagger/doc.json`
-- **Documentación Interactiva**: Pruebas de endpoints en tiempo real
-
-## Mejores Prácticas
-
-### Desarrollo
-
-1. **Clean Architecture**: Separación clara de responsabilidades
-2. **Error Handling**: Manejo consistente de errores
-3. **Validation**: Validaciones en múltiples capas
-4. **Documentation**: Documentación completa y actualizada
-
-### Seguridad
-
-1. **Input Validation**: Validación estricta de entrada
-2. **Password Security**: Hashing seguro de contraseñas
-3. **JWT Security**: Tokens seguros y renovables
-4. **SQL Injection**: Prevención con GORM
-
-### Performance
-
-1. **Database Indexing**: Índices optimizados
-2. **Query Optimization**: Consultas eficientes
-3. **Caching Strategy**: Estrategia de caché
-4. **Connection Pooling**: Pool de conexiones
-
-## Roadmap
-
-### Próximas Funcionalidades
-
-- [ ] Notificaciones push
-- [ ] Reportes y analytics
-- [ ] Integración con wearables
-- [ ] API de terceros
-- [ ] Microservicios
-
-### Mejoras Técnicas
-
-- [ ] GraphQL API
-- [ ] Event sourcing
-- [ ] CQRS pattern
-- [ ] Kubernetes deployment
-- [ ] Monitoring y logging
-
-## Soporte y Contribución
-
-### Contacto
-
-- **Email**: support@gymbro.com
-- **Documentación**: `/docs`
-- **Issues**: GitHub Issues
-- **Discussions**: GitHub Discussions
-
-### Contribución
-
-1. Fork del repositorio
-2. Crear rama feature
-3. Implementar cambios
-4. Tests y documentación
-5. Pull request
-
----
-
-**GymBro API v1.0** - Sistema completo de gestión de rutinas de gimnasio con arquitectura limpia y funcionalidades avanzadas de gestión de usuarios.
+- `

@@ -29,11 +29,10 @@ import (
 )
 
 func main() {
-	// Cargar variables de entorno desde el archivo .env
-	// Esto debe hacerse antes de cargar la configuración
+	// Cargar variables de entorno
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("Advertencia: No se pudo cargar el archivo .env. Usando valores por defecto y variables de entorno del sistema.")
+		log.Println("Advertencia: No se pudo cargar el archivo .env")
 	}
 
 	// Cargar configuración
@@ -42,13 +41,19 @@ func main() {
 	// Inicializar contenedor de dependencias
 	container := config.NewContainer()
 
-	// Crear y configurar servidor
+	// Inicializar servidor
 	server := config.NewServer(container, cfg)
+
+	// Ejecutar seeding automático al inicio
+	log.Println("🌱 Verificando datos iniciales...")
+	if err := container.Seeder.Seed(); err != nil {
+		log.Printf("⚠️  Error durante el seeding automático: %v", err)
+	}
 
 	// Iniciar servidor
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
 	log.Printf("🚀 Servidor iniciando en puerto %s", cfg.ServerPort)
 	if err := server.Run(addr); err != nil {
-		log.Fatal("Error al iniciar el servidor:", err)
+		log.Fatalf("❌ Error iniciando servidor: %v", err)
 	}
 }

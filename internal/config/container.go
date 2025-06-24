@@ -40,6 +40,9 @@ type Container struct {
 	SesionEjercicioService *usecase.SessionExerciseUsecase
 	RefreshTokenService    *usecase.RefreshTokenUsecase
 
+	// Seeder
+	Seeder *Seeder
+
 	// Auth Configuration
 	JWTConfig *Config
 }
@@ -97,4 +100,7 @@ func (c *Container) initializeUseCases() {
 	c.SesionService = usecase.NewSessionUsecase(c.SesionRepo)
 	c.SesionEjercicioService = usecase.NewSessionExerciseUsecase(c.SesionEjercicioRepo)
 	c.RefreshTokenService = usecase.NewRefreshTokenUsecase(c.RefreshTokenRepo, c.UsuarioRepo, c.JWTConfig)
+
+	// Inicializar seeder
+	c.Seeder = NewSeeder(c.RoleRepo, c.UsuarioRepo)
 }
