@@ -10,14 +10,14 @@ WORKDIR /app
 # Copiar go mod files
 COPY go.mod go.sum ./
 
-# Descargar dependencias con timeout y reintentos
-RUN go mod download -x || (sleep 5 && go mod download -x) || (sleep 10 && go mod download -x)
+# Descargar dependencias
+RUN go mod download
 
 # Copiar código fuente
 COPY . .
 
-# Build de la aplicación
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main cmd/main.go
+# Build de la aplicación (comando simplificado)
+RUN go build -o main cmd/main.go
 
 # Production stage
 FROM alpine:latest
