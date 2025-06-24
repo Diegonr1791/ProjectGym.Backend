@@ -76,3 +76,10 @@ const (
 	RoleUser  = "user"
 	RoleDev   = "dev"
 )
+
+// System role IDs (asumiendo que estos son los IDs por defecto)
+const (
+	RoleIDAdmin = uint(1)
+	RoleIDDev   = uint(2)
+	RoleIDUser  = uint(3)
+)

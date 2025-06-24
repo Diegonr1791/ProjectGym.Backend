@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"regexp"
 	"strings"
 	"time"
@@ -13,11 +14,15 @@ import (
 )
 
 type UsuarioUsecase struct {
-	repo repositories.UsuarioRepository
+	repo     repositories.UsuarioRepository
+	roleRepo repositories.RoleRepository
 }
 
-func NewUsuarioUsecase(repo repositories.UsuarioRepository) *UsuarioUsecase {
-	return &UsuarioUsecase{repo}
+func NewUsuarioUsecase(repo repositories.UsuarioRepository, roleRepo repositories.RoleRepository) *UsuarioUsecase {
+	return &UsuarioUsecase{
+		repo:     repo,
+		roleRepo: roleRepo,
+	}
 }
 
 // validateEmail validates email format
@@ -133,6 +138,19 @@ func (uc *UsuarioUsecase) CreateUsuario(u *models.User) error {
 		return err
 	}
 
+	// Validate that the role exists and is active
+	role, err := uc.roleRepo.GetByID(context.Background(), u.RoleID)
+	if err != nil {
+		if errors.Is(err, domainErrors.ErrNotFound) {
+			return domainErrors.NewAppError(400, "INVALID_ROLE", "The specified role does not exist", nil)
+		}
+		return domainErrors.NewAppError(500, "DB_CHECK_ROLE_FAILED", "Failed to validate role", err)
+	}
+
+	if role.IsSoftDeleted() {
+		return domainErrors.NewAppError(400, "INVALID_ROLE", "The specified role is not available", nil)
+	}
+
 	// Check if email already exists
 	existingUser, err := uc.repo.GetByEmailIncludingDeleted(u.Email)
 	if err != nil && !errors.Is(err, domainErrors.ErrNotFound) {
@@ -149,7 +167,7 @@ func (uc *UsuarioUsecase) CreateUsuario(u *models.User) error {
 	// Hash password
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return domainErrors.NewAppError(500, "HASH_PASSWORD_FAILED", "Failed to hash password", err)
+		return domainErrors.NewAppError(500, "HASH_PASSWORD_FAILED", "Failed to process password", err)
 	}
 	u.Password = string(hash)
 
@@ -163,7 +181,7 @@ func (uc *UsuarioUsecase) CreateUsuario(u *models.User) error {
 		if errors.Is(err, domainErrors.ErrConflict) {
 			return domainErrors.ErrEmailAlreadyExists
 		}
-		return domainErrors.NewAppError(500, "DB_CREATE_USER_FAILED", "Failed to create user in database", err)
+		return domainErrors.NewAppError(500, "USER_CREATION_FAILED", "Failed to create user account", err)
 	}
 
 	return nil
@@ -230,6 +248,21 @@ func (uc *UsuarioUsecase) UpdateUsuario(u *models.User) error {
 		return err
 	}
 
+	// Validate that the role exists and is active if a new role is provided
+	if u.RoleID != 0 && u.RoleID != existingUser.RoleID {
+		role, err := uc.roleRepo.GetByID(context.Background(), u.RoleID)
+		if err != nil {
+			if errors.Is(err, domainErrors.ErrNotFound) {
+				return domainErrors.NewAppError(400, "INVALID_ROLE", "The specified role does not exist", nil)
+			}
+			return domainErrors.NewAppError(500, "DB_CHECK_ROLE_FAILED", "Failed to validate role", err)
+		}
+
+		if role.IsSoftDeleted() {
+			return domainErrors.NewAppError(400, "INVALID_ROLE", "The specified role is not available", nil)
+		}
+	}
+
 	// Check email uniqueness if email is being updated
 	if u.Email != "" && u.Email != existingUser.Email {
 		emailUser, err := uc.repo.GetByEmailIncludingDeleted(u.Email)
@@ -249,7 +282,7 @@ func (uc *UsuarioUsecase) UpdateUsuario(u *models.User) error {
 	if u.Password != "" {
 		hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 		if err != nil {
-			return domainErrors.NewAppError(500, "HASH_PASSWORD_FAILED", "Failed to hash password during update", err)
+			return domainErrors.NewAppError(500, "HASH_PASSWORD_FAILED", "Failed to process password during update", err)
 		}
 		u.Password = string(hash)
 	} else {
@@ -272,7 +305,7 @@ func (uc *UsuarioUsecase) UpdateUsuario(u *models.User) error {
 		if errors.Is(err, domainErrors.ErrConflict) {
 			return domainErrors.ErrEmailAlreadyExists
 		}
-		return domainErrors.NewAppError(500, "DB_UPDATE_USER_FAILED", "Failed to apply user updates", err)
+		return domainErrors.NewAppError(500, "USER_UPDATE_FAILED", "Failed to update user account", err)
 	}
 
 	//Default values
@@ -348,7 +381,7 @@ func (uc *UsuarioUsecase) Login(email, password string) (*models.User, error) {
 		return nil, domainErrors.NewAppError(400, "PASSWORD_REQUIRED", "Password is required", nil)
 	}
 
-	usuario, err := uc.repo.GetByEmail(email)
+	usuario, err := uc.repo.GetByEmailWithRole(email)
 	if err != nil {
 		if errors.Is(err, domainErrors.ErrNotFound) {
 			return nil, domainErrors.ErrInvalidCredentials

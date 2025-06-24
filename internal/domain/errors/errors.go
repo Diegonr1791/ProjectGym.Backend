@@ -61,6 +61,7 @@ var (
 	ErrInternalServer         = NewAppError(http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", "An internal server error occurred.", nil)
 	ErrBadRequest             = NewAppError(http.StatusBadRequest, "BAD_REQUEST", "The request is invalid.", nil)
 	ErrUnauthorized           = NewAppError(http.StatusUnauthorized, "UNAUTHORIZED", "Request is not authorized.", nil)
+	ErrForbidden              = NewAppError(http.StatusForbidden, "FORBIDDEN", "Access forbidden. Insufficient permissions.", nil)
 	ErrEmailAlreadyExists     = NewAppError(http.StatusConflict, "EMAIL_ALREADY_EXISTS", "The provided email is already in use.", nil)
 	ErrInvalidCredentials     = NewAppError(http.StatusUnauthorized, "INVALID_CREDENTIALS", "Invalid credentials provided.", nil)
 	ErrInvalidRefreshToken    = NewAppError(http.StatusUnauthorized, "INVALID_REFRESH_TOKEN", "The provided refresh token is invalid or has expired.", nil)

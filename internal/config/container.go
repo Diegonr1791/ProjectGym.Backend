@@ -26,6 +26,7 @@ type Container struct {
 	RefreshTokenRepo    repository.RefreshTokenRepository
 
 	// Use Cases
+	AuthorizationService   *usecase.AuthorizationUsecase
 	RoleService            *usecase.RoleUseCase
 	UsuarioService         *usecase.UsuarioUsecase
 	RutinaService          *usecase.RutinaUsecase
@@ -83,8 +84,9 @@ func (c *Container) initializeRepositories() {
 
 // initializeUseCases configura todos los use cases
 func (c *Container) initializeUseCases() {
+	c.AuthorizationService = usecase.NewAuthorizationUsecase(c.RoleRepo)
 	c.RoleService = usecase.NewRoleUseCase(c.RoleRepo)
-	c.UsuarioService = usecase.NewUsuarioUsecase(c.UsuarioRepo)
+	c.UsuarioService = usecase.NewUsuarioUsecase(c.UsuarioRepo, c.RoleRepo)
 	c.RutinaService = usecase.NewRutinaUsecase(c.RutinaRepo)
 	c.GrupoMuscularService = usecase.NewGrupoMuscularUseCase(c.GrupoMuscularRepo)
 	c.RutinaGMService = usecase.NewRoutineMuscleGroupUsecase(c.RutinaGMRepo)

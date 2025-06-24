@@ -74,7 +74,7 @@ func (uc *RefreshTokenUsecase) ValidateAndRefresh(refreshTokenString string) (st
 		return "", domainErrors.NewAppError(500, "DB_GET_USER_FAILED", "Failed to get user from database", err)
 	}
 
-	accessToken, err := auth.GenerateJWT(user.ID, user.Email, uc.jwtConfig)
+	accessToken, err := auth.GenerateJWT(user.ID, user.Email, user.RoleID, uc.jwtConfig)
 	if err != nil {
 		return "", domainErrors.NewAppError(500, "JWT_GENERATE_ACCESS_TOKEN_FAILED", "Failed to generate access token", err)
 	}

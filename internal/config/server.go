@@ -1,9 +1,8 @@
 package config
 
 import (
-	http "github.com/Diegonr1791/GymBro/interfaces/http"
-	"github.com/Diegonr1791/GymBro/interfaces/http/middleware"
-	"github.com/Diegonr1791/GymBro/internal/auth"
+	handler "github.com/Diegonr1791/GymBro/interfaces/http/handler"
+	middleware "github.com/Diegonr1791/GymBro/interfaces/http/middleware"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -40,28 +39,40 @@ func (s *Server) setupRoutes() {
 	// Configurar Swagger
 	s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// Crear factory de middlewares
+	middlewareFactory := NewMiddlewareFactory(s.container)
+
 	// Grupo principal para la API versionada
 	apiV1 := s.router.Group("/api/v1")
 
-	// Rutas públicas (sin autenticación) - ahora cuelgan de /api/v1
-	http.NewAuthHandler(apiV1, s.container.UsuarioService, s.container.RefreshTokenService, s.config)
+	// Rutas públicas (sin autenticación)
+	handler.NewAuthHandler(apiV1, s.container.UsuarioService, s.container.RefreshTokenService, s.config)
 
-	// Grupo de rutas protegidas con JWT - ahora cuelgan de /api/v1
+	// Grupo de rutas protegidas con JWT
 	protected := apiV1.Group("/")
-	protected.Use(auth.JWTAuthMiddleware(s.config))
+	protected.Use(middlewareFactory.CreateJWTAuthMiddleware())
 
 	// Configurar handlers protegidos
-	http.NewRoleHandler(protected, s.container.RoleService)
-	http.NewUsuarioHandler(protected, s.container.UsuarioService)
-	http.NewRoutineHandler(protected, s.container.RutinaService)
-	http.NewGrupoMuscularHandler(protected, s.container.GrupoMuscularService)
-	http.NewRoutineMuscleGroupHandler(protected, s.container.RutinaGMService)
-	http.NewFavoriteHandler(protected, s.container.FavoritaService)
-	http.NewMeasurementHandler(protected, s.container.MedicionService)
-	http.NewTypeExerciseHandler(protected, s.container.TipoEjercicioService)
-	http.NewExerciseHandler(protected, s.container.EjercicioService)
-	http.NewSessionHandler(protected, s.container.SesionService)
-	http.NewSessionExerciseHandler(protected, s.container.SesionEjercicioService)
+	handler.NewRoleHandler(protected, s.container.RoleService)
+
+	// Configurar handler de usuarios con autorización especial para eliminación
+	handler.NewUsuarioHandlerWithAuth(protected, s.container.UsuarioService, middlewareFactory.CreateUserDeletionAuthMiddleware())
+
+	// Configurar otros handlers
+	s.setupOtherHandlers(protected)
+}
+
+// setupOtherHandlers configura los handlers que no requieren autorización especial
+func (s *Server) setupOtherHandlers(protected *gin.RouterGroup) {
+	handler.NewRoutineHandler(protected, s.container.RutinaService)
+	handler.NewGrupoMuscularHandler(protected, s.container.GrupoMuscularService)
+	handler.NewRoutineMuscleGroupHandler(protected, s.container.RutinaGMService)
+	handler.NewFavoriteHandler(protected, s.container.FavoritaService)
+	handler.NewMeasurementHandler(protected, s.container.MedicionService)
+	handler.NewTypeExerciseHandler(protected, s.container.TipoEjercicioService)
+	handler.NewExerciseHandler(protected, s.container.EjercicioService)
+	handler.NewSessionHandler(protected, s.container.SesionService)
+	handler.NewSessionExerciseHandler(protected, s.container.SesionEjercicioService)
 }
 
 // Run inicia el servidor en el puerto especificado

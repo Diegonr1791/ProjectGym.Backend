@@ -76,6 +76,17 @@ func (r *UsuarioGormRepository) GetByEmailIncludingDeleted(email string) (*model
 	return &usuario, nil
 }
 
+func (r *UsuarioGormRepository) GetByEmailWithRole(email string) (*models.User, error) {
+	var usuario models.User
+	if err := r.DB.Preload("Role").Where("email = ? AND is_deleted = ? AND is_active = ?", email, false, true).First(&usuario).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domainErrors.ErrNotFound
+		}
+		return nil, errors.Wrapf(err, "UsuarioGormRepository.GetByEmailWithRole: email %s", email)
+	}
+	return &usuario, nil
+}
+
 func (r *UsuarioGormRepository) Create(usuario *models.User) error {
 	if err := r.DB.Create(usuario).Error; err != nil {
 		var pgErr *pgconn.PgError

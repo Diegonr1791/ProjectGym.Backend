@@ -17,10 +17,11 @@ type JWTConfig interface {
 }
 
 // Claims personalizados para el token JWT de acceso
-// Incluye ID y Email
+// Incluye ID, Email y RoleID
 type CustomClaims struct {
 	UserID int    `json:"user_id"`
 	Email  string `json:"email"`
+	RoleID uint   `json:"role_id"`
 	jwt.RegisteredClaims
 }
 
@@ -33,11 +34,12 @@ type RefreshClaims struct {
 }
 
 // GenerateJWT genera un token JWT de acceso para un usuario dado
-func GenerateJWT(userID uint, email string, cfg JWTConfig) (string, error) {
+func GenerateJWT(userID uint, email string, roleID uint, cfg JWTConfig) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(cfg.GetJWTExpirationMinutes()) * time.Minute)
 	claims := CustomClaims{
 		UserID: int(userID),
 		Email:  email,
+		RoleID: roleID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},

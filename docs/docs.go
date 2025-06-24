@@ -3776,6 +3776,12 @@ const docTemplate = `{
                         },
                         "id": {
                             "type": "integer"
+                        },
+                        "role": {
+                            "type": "string"
+                        },
+                        "role_id": {
+                            "type": "integer"
                         }
                     }
                 }

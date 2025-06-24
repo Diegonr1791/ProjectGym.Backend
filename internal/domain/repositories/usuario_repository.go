@@ -9,6 +9,7 @@ type UsuarioRepository interface {
 	GetByIDIncludingDeleted(id uint) (*model.User, error)
 	GetByEmail(email string) (*model.User, error)
 	GetByEmailIncludingDeleted(email string) (*model.User, error)
+	GetByEmailWithRole(email string) (*model.User, error)
 	Create(usuario *model.User) error
 	Update(usuario *model.User) error
 	Delete(id uint) error
