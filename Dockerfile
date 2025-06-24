@@ -16,8 +16,8 @@ RUN go mod download
 # Copiar código fuente
 COPY . .
 
-# Build de la aplicación (con build tag para Swagger)
-RUN go build -tags swag -o main cmd/main.go
+# Build de la aplicación (comando simplificado)
+RUN go build -o main cmd/main.go
 
 # Production stage
 FROM alpine:latest
