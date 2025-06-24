@@ -3,6 +3,7 @@ package config
 import (
 	handler "github.com/Diegonr1791/GymBro/interfaces/http/handler"
 	middleware "github.com/Diegonr1791/GymBro/interfaces/http/middleware"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -18,6 +19,9 @@ type Server struct {
 // NewServer crea una nueva instancia del servidor
 func NewServer(container *Container, cfg *Config) *Server {
 	router := gin.Default()
+
+	// Habilitar CORS para todos los orígenes (útil para pruebas)
+	router.Use(cors.Default())
 
 	// Registrar el middleware de errores globalmente.
 	router.Use(middleware.ErrorHandler())
